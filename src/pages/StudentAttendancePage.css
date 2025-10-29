@@ -27,6 +27,25 @@
   font-size: 24px;
 }
 
+.header-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .student-attendance-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .header-buttons {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 /* 学生選択 */
 .student-selector {
   padding: 20px;

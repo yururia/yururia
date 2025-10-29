@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { attendanceApi } from '../api/attendanceApi';
+import QRScannerComponent from '../components/common/QRScanner';
 import './StudentAttendancePage.css';
 
 const StudentAttendancePage = () => {
@@ -11,6 +12,8 @@ const StudentAttendancePage = () => {
   const [error, setError] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [lastScanResult, setLastScanResult] = useState(null);
 
   // フォーム状態
   const [formData, setFormData] = useState({
@@ -131,6 +134,40 @@ const StudentAttendancePage = () => {
     });
   };
 
+  const handleQRScan = async (studentId) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await attendanceApi.recordQRAttendance(studentId);
+      
+      if (response.success) {
+        setLastScanResult(response.data);
+        setShowQRScanner(false);
+        await loadAttendanceRecords(selectedStudent);
+        
+        // 成功メッセージを表示
+        alert(`出欠記録が正常に処理されました\n学生: ${response.data.studentName}\n授業: ${response.data.className}\nステータス: ${response.data.status === 'present' ? '出席' : '遅刻'}`);
+      } else {
+        setError(response.message || 'QRコード読み取りによる出欠記録に失敗しました');
+      }
+    } catch (err) {
+      setError('QRコード読み取りによる出欠記録に失敗しました');
+      console.error('QR出欠記録エラー:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenQRScanner = () => {
+    setShowQRScanner(true);
+    setError(null);
+  };
+
+  const handleCloseQRScanner = () => {
+    setShowQRScanner(false);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="student-attendance-page">
@@ -158,13 +195,22 @@ const StudentAttendancePage = () => {
       <div className="student-attendance-container">
         <div className="student-attendance-header">
           <h1>学生出欠記録管理</h1>
-          <button
-            className="btn btn--primary"
-            onClick={() => setShowAddForm(true)}
-            disabled={isLoading}
-          >
-            出欠記録追加
-          </button>
+          <div className="header-buttons">
+            <button
+              className="btn btn--primary"
+              onClick={handleOpenQRScanner}
+              disabled={isLoading}
+            >
+              📱 QRコード読み取り
+            </button>
+            <button
+              className="btn btn--secondary"
+              onClick={() => setShowAddForm(true)}
+              disabled={isLoading}
+            >
+              手動記録追加
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -308,6 +354,13 @@ const StudentAttendancePage = () => {
           )}
         </div>
       </div>
+      
+      {/* QRコードスキャナー */}
+      <QRScannerComponent
+        isOpen={showQRScanner}
+        onScan={handleQRScan}
+        onClose={handleCloseQRScanner}
+      />
     </div>
   );
 };

@@ -2,10 +2,11 @@
 import axios from 'axios';
 
 // APIのベースURL（環境に応じて変更）
+// Node.jsバックエンドを使用
 const API_BASE_URL = process.env.REACT_APP_API_URL || 
   (process.env.NODE_ENV === 'production' 
-    ? 'http://192.168.12.200/api'
-    : 'http://192.168.12.200/api');
+    ? 'http://192.168.12.200:3001/api'
+    : 'http://localhost:3001/api');
 
 // axiosインスタンスの作成
 const apiClient = axios.create({
@@ -54,7 +55,9 @@ apiClient.interceptors.response.use(
       // 認証エラーの場合、ローカルストレージをクリアしてログインページにリダイレクト
       console.log('認証エラー - トークンを削除してログインページにリダイレクト');
       localStorage.removeItem('authToken');
-      window.location.href = '/login';
+      // サブフォルダ対応のリダイレクト
+      const basename = '/link-up';
+      window.location.href = `${basename}/login`;
     } else if (error.code === 'NETWORK_ERROR' || !error.response) {
       console.error('ネットワークエラー - サーバーに接続できません');
       // ネットワークエラーの場合、より詳細な情報を提供
@@ -185,9 +188,45 @@ export const attendanceApi = {
     return response.data;
   },
 
+  // QRコード読み取りによる出欠記録
+  recordQRAttendance: async (studentId, timestamp = null) => {
+    const response = await apiClient.post('/student-attendance.php', {
+      studentId,
+      timestamp,
+      qrScan: true
+    });
+    return response.data;
+  },
+
   getStudentAttendanceRecords: async (studentId = null, startDate = null, endDate = null) => {
     const response = await apiClient.get('/student-attendance.php', {
       params: { studentId, startDate, endDate },
+    });
+    return response.data;
+  },
+
+  // 詳細出欠記録の取得
+  getDetailedAttendanceRecords: async (studentId = null, classId = null, startDate = null, endDate = null) => {
+    const response = await apiClient.get('/student-attendance.php', {
+      params: { 
+        action: 'detailed',
+        studentId, 
+        classId, 
+        startDate, 
+        endDate 
+      },
+    });
+    return response.data;
+  },
+
+  // 欠課学生の記録
+  markAbsentStudents: async (classId, attendanceDate) => {
+    const response = await apiClient.get('/student-attendance.php', {
+      params: { 
+        action: 'mark-absent',
+        classId, 
+        attendanceDate 
+      },
     });
     return response.data;
   },
@@ -333,6 +372,110 @@ export const attendanceApi = {
         limit, 
         offset 
       },
+    });
+    return response.data;
+  },
+
+  // グループ管理
+  createGroup: async (groupName, description = null) => {
+    const response = await apiClient.post('/groups.php', {
+      groupName,
+      description
+    });
+    return response.data;
+  },
+
+  getGroups: async () => {
+    const response = await apiClient.get('/groups.php');
+    return response.data;
+  },
+
+  getGroupById: async (groupId) => {
+    const response = await apiClient.get(`/groups.php?id=${groupId}`);
+    return response.data;
+  },
+
+  updateGroup: async (groupId, groupName, description = null) => {
+    const response = await apiClient.put(`/groups.php?id=${groupId}&action=update`, {
+      groupName,
+      description
+    });
+    return response.data;
+  },
+
+  deleteGroup: async (groupId) => {
+    const response = await apiClient.delete(`/groups.php?id=${groupId}&action=group`);
+    return response.data;
+  },
+
+  getGroupMembers: async (groupId, status = null) => {
+    const response = await apiClient.get(`/groups.php?id=${groupId}&action=members`, {
+      params: { status }
+    });
+    return response.data;
+  },
+
+  inviteStudent: async (groupId, studentId) => {
+    const response = await apiClient.get(`/groups.php?id=${groupId}&action=invite&studentId=${studentId}`);
+    return response.data;
+  },
+
+  acceptInvitation: async (membershipId, studentId) => {
+    const response = await apiClient.put(`/groups.php?action=accept&membershipId=${membershipId}&studentId=${studentId}`);
+    return response.data;
+  },
+
+  removeMembership: async (membershipId) => {
+    const response = await apiClient.delete(`/groups.php?action=membership&membershipId=${membershipId}`);
+    return response.data;
+  },
+
+  getStudentGroups: async (studentId) => {
+    const response = await apiClient.get(`/groups.php?studentId=${studentId}`);
+    return response.data;
+  },
+
+  // QRコード生成
+  generateQRCode: async (groupId, format = 'json') => {
+    const response = await apiClient.get(`/qr.php?groupId=${groupId}&format=${format}`);
+    return response.data;
+  },
+
+  // 出欠記録スキャン
+  recordScan: async (qrData, timestamp = null) => {
+    const response = await apiClient.post('/record-scan.php', {
+      qrData,
+      timestamp
+    });
+    return response.data;
+  },
+
+  // 出欠閲覧
+  getDailyAttendance: async (groupId, date) => {
+    const response = await apiClient.get('/attendance-reports.php', {
+      params: { groupId, date, action: 'daily' }
+    });
+    return response.data;
+  },
+
+  getWeeklyAttendance: async (groupId, startDate, endDate) => {
+    const response = await apiClient.get('/attendance-reports.php', {
+      params: { groupId, startDate, endDate, action: 'weekly' }
+    });
+    return response.data;
+  },
+
+  getStudentAttendance: async (groupId, studentId, startDate, endDate) => {
+    const response = await apiClient.get('/attendance-reports.php', {
+      params: { groupId, studentId, startDate, endDate, action: 'student' }
+    });
+    return response.data;
+  },
+
+  exportAttendance: async (groupId, startDate, endDate) => {
+    const response = await apiClient.get('/attendance-reports.php', {
+      params: { groupId, startDate, endDate, action: 'export' },
+      responseType: 'blob'
     });
     return response.data;
   },

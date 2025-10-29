@@ -8,6 +8,7 @@ const initialState = {
   isAuthenticated: false,
   isLoading: true,
   error: null,
+  isGuest: true, // ゲストモード
 };
 
 // アクションタイプ
@@ -40,6 +41,7 @@ const authReducer = (state, action) => {
         isAuthenticated: true,
         isLoading: false,
         error: null,
+        isGuest: false,
       };
     case AUTH_ACTIONS.LOGIN_FAILURE:
       return {
@@ -49,6 +51,7 @@ const authReducer = (state, action) => {
         isAuthenticated: false,
         isLoading: false,
         error: action.payload,
+        isGuest: true,
       };
     case AUTH_ACTIONS.REGISTER_START:
       return {
@@ -82,6 +85,7 @@ const authReducer = (state, action) => {
         isAuthenticated: false,
         isLoading: false,
         error: null,
+        isGuest: true,
       };
     case AUTH_ACTIONS.SET_LOADING:
       return {
@@ -148,7 +152,7 @@ export const AuthProvider = ({ children }) => {
           });
         }
       } else {
-        console.log('AuthProvider: トークンなし - ログアウト状態');
+        console.log('AuthProvider: トークンなし - ゲストモード');
         dispatch({ type: AUTH_ACTIONS.LOGOUT });
       }
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });

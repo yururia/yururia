@@ -3,12 +3,16 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'r
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Header from './components/layout/Header';
+import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
 import StudentPage from './pages/StudentPage';
 import StudentAttendancePage from './pages/StudentAttendancePage';
+import ProfilePage from './pages/ProfilePage';
+import GroupsPage from './pages/GroupsPage';
+import StudentDashboardPage from './pages/StudentDashboardPage';
 import './styles/global.css';
 
 // グローバルなローディングスピナー
@@ -44,6 +48,14 @@ const PublicRoute = ({ children }) => {
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : children;
 };
 
+// ゲストアクセス可能なページ（認証済みの場合はダッシュボードにリダイレクト）
+const GuestRoute = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  return children;
+};
+
 // 404 Not Found ページ
 const NotFoundPage = () => {
   const navigate = useNavigate();
@@ -63,7 +75,7 @@ const NotFoundPage = () => {
 
 // メインアプリケーションコンポーネント
 const AppContent = () => {
-  const { isAuthenticated, isLoading, error } = useAuth();
+  const { isAuthenticated, isLoading, error, isGuest } = useAuth();
 
   // デバッグログを追加
   console.log('AppContent render:', { 
@@ -77,23 +89,33 @@ const AppContent = () => {
 
   const renderRoutes = () => (
     <Routes>
+      {/* ゲストアクセス可能なルート */}
+      <Route
+        path="/"
+        element={
+          <GuestRoute>
+            <HomePage />
+          </GuestRoute>
+        }
+      />
+
       {/* パブリックルート */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <LoginPage />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <PublicRoute>
-                <RegisterPage />
-              </PublicRoute>
-            }
-          />
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <PublicRoute>
+            <RegisterPage />
+          </PublicRoute>
+        }
+      />
 
           {/* 保護されたルート */}
           <Route
@@ -128,12 +150,28 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
-
-          {/* デフォルトルート - ログインページにリダイレクト */}
           <Route
-            path="/"
+            path="/profile"
             element={
-              <Navigate to="/login" replace />
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/groups"
+            element={
+              <ProtectedRoute>
+                <GroupsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student-dashboard"
+            element={
+              <ProtectedRoute>
+                <StudentDashboardPage />
+              </ProtectedRoute>
             }
           />
 
@@ -145,7 +183,7 @@ const AppContent = () => {
   return (
     <div className="app">
       {isAuthenticated && <Header />}
-      <main className="main-content">
+      <main className="main-content" style={isGuest && !isAuthenticated ? { marginTop: 0 } : {}}>
         {error && (
           <div style={{
             padding: '15px',
@@ -209,7 +247,7 @@ const App = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router>
+        <Router basename="/link-up">
           <AppContent />
         </Router>
       </AuthProvider>
