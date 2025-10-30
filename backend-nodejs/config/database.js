@@ -1,5 +1,5 @@
 const mysql = require('mysql2/promise');
-const logger = require('./logger');
+const logger = require('../utils/logger');
 
 /**
  * データベース接続プール
@@ -15,9 +15,10 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true
+  
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
+  dateStrings: true
 });
 
 /**

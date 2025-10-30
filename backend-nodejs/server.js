@@ -18,6 +18,7 @@ const qrRoutes = require('./routes/qr');
 const groupRoutes = require('./routes/groups');
 
 const logger = require('./utils/logger');
+const { testConnection } = require('./config/database');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -108,6 +109,13 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   logger.info(`サーバーが起動しました: http://localhost:${PORT}`);
   logger.info(`環境: ${process.env.NODE_ENV || 'development'}`);
+
+  // 起動時にDB接続テストを実行（失敗しても起動は継続）
+  testConnection().then((ok) => {
+    if (!ok) {
+      logger.warn('DB接続に失敗しましたが、サーバーは起動を継続します。');
+    }
+  });
 });
 
 module.exports = app;

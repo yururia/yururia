@@ -71,17 +71,17 @@ apiClient.interceptors.response.use(
 export const attendanceApi = {
   // ユーザー認証
   login: async (credentials) => {
-    const response = await apiClient.post('/auth.php?action=login', credentials);
+    const response = await apiClient.post('/auth/login', credentials);
     return response.data;
   },
 
   register: async (userData) => {
-    const response = await apiClient.post('/auth.php?action=register', userData);
+    const response = await apiClient.post('/auth/register', userData);
     return response.data;
   },
 
   logout: async () => {
-    const response = await apiClient.post('/auth.php?action=logout');
+    const response = await apiClient.post('/auth/logout');
     return response.data;
   },
 
@@ -89,99 +89,99 @@ export const attendanceApi = {
   // attendanceData は { date, type, timestamp, reason(optional) } を含む想定
   // type: 'checkin', 'checkout', 'late', 'absent', 'early_departure'
   recordAttendance: async (data) => {
-    const response = await apiClient.post('/attendance.php', data);
+    const response = await apiClient.post('/attendance', data);
     return response.data;
   },
 
   getAttendanceRecords: async (userId, dateRange) => {
-    const response = await apiClient.get('/attendance.php', {
+    const response = await apiClient.get('/attendance', {
       params: { userId, ...dateRange },
     });
     return response.data;
   },
 
   updateAttendance: async (attendanceId, updateData) => {
-    const response = await apiClient.put(`/attendance.php?id=${attendanceId}`, updateData);
+    const response = await apiClient.put(`/attendance/${attendanceId}`, updateData);
     return response.data;
   },
 
   deleteAttendance: async (attendanceId) => {
-    const response = await apiClient.delete(`/attendance.php?id=${attendanceId}`);
+    const response = await apiClient.delete(`/attendance/${attendanceId}`);
     return response.data;
   },
 
   // ユーザー管理
   getUsers: async () => {
-    const response = await apiClient.get('/users.php');
+    const response = await apiClient.get('/users');
     return response.data;
   },
 
   getUserProfile: async () => {
-    const response = await apiClient.get('/auth.php?action=me');
+    const response = await apiClient.get('/auth/me');
     return response.data;
   },
 
   getUserById: async (userId) => {
-    const response = await apiClient.get(`/users.php?userId=${userId}`);
+    const response = await apiClient.get(`/users/${userId}`);
     return response.data;
   },
 
   updateUserProfile: async (userId, userData) => {
-    const response = await apiClient.put(`/users.php?userId=${userId}`, userData);
+    const response = await apiClient.put(`/users/${userId}`, userData);
     return response.data;
   },
 
   // 統計・レポート
   getAttendanceStats: async (userId, period) => {
-    const response = await apiClient.get('/attendance.php', {
-      params: { action: 'stats', userId, period },
+    const response = await apiClient.get('/attendance/stats', {
+      params: { userId, period },
     });
     return response.data;
   },
 
   getMonthlyReport: async (userId, year, month) => {
-    const response = await apiClient.get('/attendance.php', {
-      params: { action: 'report', userId, year, month },
+    const response = await apiClient.get('/attendance/report', {
+      params: { userId, year, month },
     });
     return response.data;
   },
 
   // 学生管理
   getStudents: async (search = null, limit = null, offset = 0) => {
-    const response = await apiClient.get('/students.php', {
+    const response = await apiClient.get('/students', {
       params: { search, limit, offset },
     });
     return response.data;
   },
 
   getStudent: async (studentId) => {
-    const response = await apiClient.get(`/students.php?studentId=${studentId}`);
+    const response = await apiClient.get(`/students/${studentId}`);
     return response.data;
   },
 
   getStudentByCardId: async (cardId) => {
-    const response = await apiClient.get(`/students.php?cardId=${cardId}`);
+    const response = await apiClient.get(`/students/card/${cardId}`);
     return response.data;
   },
 
   createStudent: async (studentData) => {
-    const response = await apiClient.post('/students.php', studentData);
+    const response = await apiClient.post('/students', studentData);
     return response.data;
   },
 
   updateStudent: async (studentId, studentData) => {
-    const response = await apiClient.put(`/students.php?studentId=${studentId}`, studentData);
+    const response = await apiClient.put(`/students/${studentId}`, studentData);
     return response.data;
   },
 
   deleteStudent: async (studentId) => {
-    const response = await apiClient.delete(`/students.php?studentId=${studentId}`);
+    const response = await apiClient.delete(`/students/${studentId}`);
     return response.data;
   },
 
   // 学生出欠記録（シンプル版）
   recordStudentAttendance: async (studentId, timestamp = null) => {
-    const response = await apiClient.post('/student-attendance.php', {
+    const response = await apiClient.post('/student-attendance', {
       studentId,
       timestamp
     });
@@ -190,7 +190,7 @@ export const attendanceApi = {
 
   // QRコード読み取りによる出欠記録
   recordQRAttendance: async (studentId, timestamp = null) => {
-    const response = await apiClient.post('/student-attendance.php', {
+    const response = await apiClient.post('/student-attendance', {
       studentId,
       timestamp,
       qrScan: true
@@ -199,7 +199,7 @@ export const attendanceApi = {
   },
 
   getStudentAttendanceRecords: async (studentId = null, startDate = null, endDate = null) => {
-    const response = await apiClient.get('/student-attendance.php', {
+    const response = await apiClient.get('/student-attendance', {
       params: { studentId, startDate, endDate },
     });
     return response.data;
@@ -207,9 +207,8 @@ export const attendanceApi = {
 
   // 詳細出欠記録の取得
   getDetailedAttendanceRecords: async (studentId = null, classId = null, startDate = null, endDate = null) => {
-    const response = await apiClient.get('/student-attendance.php', {
+    const response = await apiClient.get('/student-attendance/detailed', {
       params: { 
-        action: 'detailed',
         studentId, 
         classId, 
         startDate, 
@@ -221,9 +220,8 @@ export const attendanceApi = {
 
   // 欠課学生の記録
   markAbsentStudents: async (classId, attendanceDate) => {
-    const response = await apiClient.get('/student-attendance.php', {
+    const response = await apiClient.get('/student-attendance/mark-absent', {
       params: { 
-        action: 'mark-absent',
         classId, 
         attendanceDate 
       },
@@ -232,119 +230,115 @@ export const attendanceApi = {
   },
 
   getStudentMonthlyReport: async (studentId = null, year, month) => {
-    const response = await apiClient.get('/student-attendance.php', {
-      params: { action: 'report', studentId, year, month },
+    const response = await apiClient.get('/student-attendance/report', {
+      params: { studentId, year, month },
     });
     return response.data;
   },
 
   getStudentAttendanceStats: async (studentId = null, period = 'month') => {
-    const response = await apiClient.get('/student-attendance.php', {
-      params: { action: 'stats', studentId, period },
+    const response = await apiClient.get('/student-attendance/stats', {
+      params: { studentId, period },
     });
     return response.data;
   },
 
   deleteStudentAttendance: async (recordId) => {
-    const response = await apiClient.delete(`/student-attendance.php?id=${recordId}`);
+    const response = await apiClient.delete(`/student-attendance/${recordId}`);
     return response.data;
   },
 
   // 科目管理
   getSubjects: async (search = null, isActive = null) => {
-    const response = await apiClient.get('/subjects.php', {
+    const response = await apiClient.get('/subjects', {
       params: { search, isActive },
     });
     return response.data;
   },
 
   createSubject: async (subjectData) => {
-    const response = await apiClient.post('/subjects.php', subjectData);
+    const response = await apiClient.post('/subjects', subjectData);
     return response.data;
   },
 
   updateSubject: async (subjectId, subjectData) => {
-    const response = await apiClient.put(`/subjects.php?subjectId=${subjectId}`, subjectData);
+    const response = await apiClient.put(`/subjects/${subjectId}`, subjectData);
     return response.data;
   },
 
   deleteSubject: async (subjectId) => {
-    const response = await apiClient.delete(`/subjects.php?subjectId=${subjectId}`);
+    const response = await apiClient.delete(`/subjects/${subjectId}`);
     return response.data;
   },
 
   // 授業管理
   getClasses: async (search = null, subjectId = null, isActive = null) => {
-    const response = await apiClient.get('/classes.php', {
+    const response = await apiClient.get('/classes', {
       params: { search, subjectId, isActive },
     });
     return response.data;
   },
 
   createClass: async (classData) => {
-    const response = await apiClient.post('/classes.php', classData);
+    const response = await apiClient.post('/classes', classData);
     return response.data;
   },
 
   updateClass: async (classId, classData) => {
-    const response = await apiClient.put(`/classes.php?classId=${classId}`, classData);
+    const response = await apiClient.put(`/classes/${classId}`, classData);
     return response.data;
   },
 
   deleteClass: async (classId) => {
-    const response = await apiClient.delete(`/classes.php?classId=${classId}`);
+    const response = await apiClient.delete(`/classes/${classId}`);
     return response.data;
   },
 
   // 通知管理
   getNotifications: async (isRead = null, type = null) => {
-    const response = await apiClient.get('/notifications.php', {
-      params: { action: 'user', isRead, type },
+    const response = await apiClient.get('/notifications', {
+      params: { isRead, type },
     });
     return response.data;
   },
 
   getStudentNotifications: async (studentId, isRead = null, type = null) => {
-    const response = await apiClient.get('/notifications.php', {
-      params: { action: 'student', studentId, isRead, type },
+    const response = await apiClient.get(`/notifications/student/${studentId}`, {
+      params: { isRead, type },
     });
     return response.data;
   },
 
   getUnreadNotificationCount: async () => {
-    const response = await apiClient.get('/notifications.php', {
-      params: { action: 'unread-count' },
-    });
+    const response = await apiClient.get('/notifications/unread-count');
     return response.data;
   },
 
   markNotificationAsRead: async (notificationId) => {
-    const response = await apiClient.put(`/notifications.php?notificationId=${notificationId}`);
+    const response = await apiClient.put(`/notifications/${notificationId}/read`);
     return response.data;
   },
 
   deleteNotification: async (notificationId) => {
-    const response = await apiClient.delete(`/notifications.php?notificationId=${notificationId}`);
+    const response = await apiClient.delete(`/notifications/${notificationId}`);
     return response.data;
   },
 
   // システム設定
   getSetting: async (key) => {
-    const response = await apiClient.get('/settings.php', {
-      params: { action: 'get', key },
-    });
+    const response = await apiClient.get(`/settings/${key}`);
     return response.data;
   },
 
   getAllSettings: async (publicOnly = false) => {
-    const response = await apiClient.get('/settings.php', {
-      params: { action: 'all', publicOnly },
+    const response = await apiClient.get('/settings', {
+      params: { publicOnly },
     });
     return response.data;
   },
 
   setSetting: async (key, value, type = 'string', description = null, isPublic = false) => {
-    const response = await apiClient.post('/settings.php', {
+    const response = await apiClient.post('/settings', {
       key,
       value,
       type,
@@ -355,15 +349,14 @@ export const attendanceApi = {
   },
 
   deleteSetting: async (key) => {
-    const response = await apiClient.delete(`/settings.php?key=${key}`);
+    const response = await apiClient.delete(`/settings/${key}`);
     return response.data;
   },
 
   // 監査ログ（管理者のみ）
   getAuditLogs: async (userId = null, tableName = null, actionType = null, startDate = null, endDate = null, limit = 100, offset = 0) => {
-    const response = await apiClient.get('/audit-logs.php', {
+    const response = await apiClient.get('/audit-logs', {
       params: { 
-        action: 'list', 
         userId, 
         tableName, 
         actionType, 
@@ -378,7 +371,7 @@ export const attendanceApi = {
 
   // グループ管理
   createGroup: async (groupName, description = null) => {
-    const response = await apiClient.post('/groups.php', {
+    const response = await apiClient.post('/groups', {
       groupName,
       description
     });
@@ -386,17 +379,17 @@ export const attendanceApi = {
   },
 
   getGroups: async () => {
-    const response = await apiClient.get('/groups.php');
+    const response = await apiClient.get('/groups');
     return response.data;
   },
 
   getGroupById: async (groupId) => {
-    const response = await apiClient.get(`/groups.php?id=${groupId}`);
+    const response = await apiClient.get(`/groups/${groupId}`);
     return response.data;
   },
 
   updateGroup: async (groupId, groupName, description = null) => {
-    const response = await apiClient.put(`/groups.php?id=${groupId}&action=update`, {
+    const response = await apiClient.put(`/groups/${groupId}`, {
       groupName,
       description
     });
@@ -404,46 +397,52 @@ export const attendanceApi = {
   },
 
   deleteGroup: async (groupId) => {
-    const response = await apiClient.delete(`/groups.php?id=${groupId}&action=group`);
+    const response = await apiClient.delete(`/groups/${groupId}`);
     return response.data;
   },
 
   getGroupMembers: async (groupId, status = null) => {
-    const response = await apiClient.get(`/groups.php?id=${groupId}&action=members`, {
+    const response = await apiClient.get(`/groups/${groupId}/members`, {
       params: { status }
     });
     return response.data;
   },
 
   inviteStudent: async (groupId, studentId) => {
-    const response = await apiClient.get(`/groups.php?id=${groupId}&action=invite&studentId=${studentId}`);
+    const response = await apiClient.post(`/groups/${groupId}/invite`, {
+      studentId
+    });
     return response.data;
   },
 
   acceptInvitation: async (membershipId, studentId) => {
-    const response = await apiClient.put(`/groups.php?action=accept&membershipId=${membershipId}&studentId=${studentId}`);
+    const response = await apiClient.put(`/groups/memberships/${membershipId}/accept`, {
+      studentId
+    });
     return response.data;
   },
 
   removeMembership: async (membershipId) => {
-    const response = await apiClient.delete(`/groups.php?action=membership&membershipId=${membershipId}`);
+    const response = await apiClient.delete(`/groups/memberships/${membershipId}`);
     return response.data;
   },
 
   getStudentGroups: async (studentId) => {
-    const response = await apiClient.get(`/groups.php?studentId=${studentId}`);
+    const response = await apiClient.get(`/groups/student/${studentId}`);
     return response.data;
   },
 
   // QRコード生成
   generateQRCode: async (groupId, format = 'json') => {
-    const response = await apiClient.get(`/qr.php?groupId=${groupId}&format=${format}`);
+    const response = await apiClient.get(`/qr/${groupId}`, {
+      params: { format }
+    });
     return response.data;
   },
 
   // 出欠記録スキャン
   recordScan: async (qrData, timestamp = null) => {
-    const response = await apiClient.post('/record-scan.php', {
+    const response = await apiClient.post('/qr/scan', {
       qrData,
       timestamp
     });
@@ -452,50 +451,52 @@ export const attendanceApi = {
 
   // 出欠閲覧
   getDailyAttendance: async (groupId, date) => {
-    const response = await apiClient.get('/attendance-reports.php', {
-      params: { groupId, date, action: 'daily' }
+    const response = await apiClient.get('/reports/daily', {
+      params: { groupId, date }
     });
     return response.data;
   },
 
   getWeeklyAttendance: async (groupId, startDate, endDate) => {
-    const response = await apiClient.get('/attendance-reports.php', {
-      params: { groupId, startDate, endDate, action: 'weekly' }
+    const response = await apiClient.get('/reports/weekly', {
+      params: { groupId, startDate, endDate }
     });
     return response.data;
   },
 
   getStudentAttendance: async (groupId, studentId, startDate, endDate) => {
-    const response = await apiClient.get('/attendance-reports.php', {
-      params: { groupId, studentId, startDate, endDate, action: 'student' }
+    const response = await apiClient.get('/reports/student', {
+      params: { groupId, studentId, startDate, endDate }
     });
     return response.data;
   },
 
   exportAttendance: async (groupId, startDate, endDate) => {
-    const response = await apiClient.get('/attendance-reports.php', {
-      params: { groupId, startDate, endDate, action: 'export' },
+    const response = await apiClient.get('/reports/export', {
+      params: { groupId, startDate, endDate },
       responseType: 'blob'
     });
     return response.data;
   },
 
   getRecordAuditLog: async (tableName, recordId) => {
-    const response = await apiClient.get('/audit-logs.php', {
-      params: { action: 'record', tableName, recordId },
+    const response = await apiClient.get('/audit-logs/record', {
+      params: { tableName, recordId },
     });
     return response.data;
   },
 
   getAuditStats: async (startDate = null, endDate = null) => {
-    const response = await apiClient.get('/audit-logs.php', {
-      params: { action: 'stats', startDate, endDate },
+    const response = await apiClient.get('/audit-logs/stats', {
+      params: { startDate, endDate },
     });
     return response.data;
   },
 
   cleanupAuditLogs: async (daysToKeep = 365) => {
-    const response = await apiClient.delete(`/audit-logs.php?daysToKeep=${daysToKeep}`);
+    const response = await apiClient.delete(`/audit-logs/cleanup`, {
+      params: { daysToKeep }
+    });
     return response.data;
   },
 };

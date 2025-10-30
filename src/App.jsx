@@ -29,7 +29,7 @@ const GlobalLoader = () => (
       color: '#1976d2'
     }}>
       <strong>デバッグ情報:</strong><br/>
-      • API URL: {process.env.REACT_APP_API_URL || 'http://192.168.0.251/backend-php/api'}<br/>
+      • API URL: {process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}<br/>
       • 環境: {process.env.NODE_ENV}<br/>
       • 時刻: {new Date().toLocaleString()}
     </div>
@@ -247,7 +247,7 @@ const App = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router basename="/link-up">
+        <Router basename="/linkup">
           <AppContent />
         </Router>
       </AuthProvider>

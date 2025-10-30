@@ -1,6 +1,6 @@
 -- データベースが存在しない場合に作成
-CREATE DATABASE IF NOT EXISTS `i24103` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `i24103`;
+CREATE DATABASE IF NOT EXISTS `sotsuken` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `sotsuken`;
 
 -- 1. ユーザーテーブル (従業員・管理者) - PHPコードに合わせて修正
 -- アプリケーションにログインするユーザー情報を格納します。

@@ -1,6 +1,6 @@
 # 出欠管理システム
 
-React（フロントエンド）+ PHP（バックエンド）+ MySQL（データベース）による出欠管理システムです。従業員と学生の出欠を効率的に管理できます。
+React（フロントエンド）+ Node.js（バックエンド）+ MySQL（データベース）による出欠管理システムです。従業員と学生の出欠を効率的に管理できます。
 
 ## 機能
 
@@ -22,33 +22,36 @@ React（フロントエンド）+ PHP（バックエンド）+ MySQL（データ
 - **CSS3**: スタイリング
 
 ### バックエンド
-- **PHP 7.4+**: サーバーサイド言語
+- **Node.js 16+**: サーバーサイドランタイム
+- **Express.js**: Webフレームワーク
 - **MySQL 5.7+**: データベース
 - **JWT**: 認証トークン
 
 ### サーバー環境
-- **Webサーバー**: Apache 2.4+ または Nginx
+- **Node.js**: Node.jsランタイム
+- **PM2**: プロセス管理（本番環境）
 
 ## プロジェクト構成
 
 ```
 attendance-app/
 ├── build/                 # ビルド済みフロントエンド（サーバーにアップロード）
-├── backend-php/           # PHPバックエンド（サーバーにアップロード）
-│   ├── api/              # APIエンドポイント
-│   ├── classes/          # PHPクラス
-│   ├── config/           # 設定ファイル
-│   └── migrations/       # データベースマイグレーション
-├── src/                  # フロントエンドソースコード
-│   ├── api/              # バックエンドAPIとの通信
-│   ├── components/       # 再利用可能なUIコンポーネント
-│   ├── contexts/         # グローバルな状態管理
-│   ├── hooks/            # カスタムフック
-│   ├── pages/            # 各ページのコンポーネント
-│   ├── styles/           # グローバルなCSS
-│   ├── App.jsx           # ルートコンポーネント
-│   └── index.jsx         # エントリーポイント
-├── database_complete.sql # データベーススキーマ
+├── backend-nodejs/         # Node.jsバックエンド（サーバーにアップロード）
+│   ├── routes/            # APIエンドポイント
+│   ├── services/          # ビジネスロジック
+│   ├── config/            # 設定ファイル
+│   ├── middleware/        # ミドルウェア
+│   └── utils/             # ユーティリティ
+├── src/                   # フロントエンドソースコード
+│   ├── api/               # バックエンドAPIとの通信
+│   ├── components/        # 再利用可能なUIコンポーネント
+│   ├── contexts/          # グローバルな状態管理
+│   ├── hooks/             # カスタムフック
+│   ├── pages/             # 各ページのコンポーネント
+│   ├── styles/            # グローバルなCSS
+│   ├── App.jsx            # ルートコンポーネント
+│   └── index.jsx          # エントリーポイント
+├── database_complete.sql  # データベーススキーマ
 ├── package.json
 └── README.md
 ```
@@ -65,24 +68,31 @@ npm install
 mysql -u root -p < database_complete.sql
 ```
 
-### 3. 設定ファイルの確認
-`backend-php/config/config.php`でデータベース接続情報を設定してください：
+### 3. バックエンドの設定
+`backend-nodejs/.env`ファイルでデータベース接続情報を設定してください：
 
-```php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'sotsuken');
-define('DB_USER', 'server');
-define('DB_PASS', 'pass');
+```env
+DB_HOST=localhost
+DB_NAME=sotsuken
+DB_USER=server
+DB_PASS=pass
 ```
 
-### 4. 開発サーバーの起動
+### 4. バックエンドサーバーの起動
+```bash
+cd backend-nodejs
+npm install
+npm run dev
+```
+
+### 5. フロントエンド開発サーバーの起動
 ```bash
 npm start
 ```
 
 ブラウザで [http://localhost:3000](http://localhost:3000) を開いてアプリケーションを確認できます。
 
-### 5. ビルド
+### 6. ビルド
 ```bash
 npm run build
 ```
@@ -111,8 +121,10 @@ npm run build
 ### サーバーへのアップロード
 
 1. **フロントエンド**: `build/`フォルダの中身をサーバーのドキュメントルートにアップロード
-2. **バックエンド**: `backend-php/`フォルダの中身を`api/`ディレクトリにアップロード
+2. **バックエンド**: `backend-nodejs/`フォルダの中身をサーバーにアップロード
 3. **データベース**: `database_complete.sql`を実行
+4. **Node.js環境**: Node.js 16+とPM2をインストール
+5. **バックエンド起動**: PM2でバックエンドプロセスを管理
 
 ## ライセンス
 
