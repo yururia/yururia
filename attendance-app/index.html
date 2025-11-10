@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出欠管理システム</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 60px;
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+        }
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        .title {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .description {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin: 10px;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        .features {
+            margin-top: 40px;
+            text-align: left;
+        }
+        .feature {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            color: #555;
+        }
+        .feature-icon {
+            font-size: 1.5rem;
+            margin-right: 15px;
+            color: #667eea;
+        }
+        .footer {
+            margin-top: 40px;
+            color: #999;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📊</div>
+        <h1 class="title">出欠管理システム</h1>
+        <p class="description">
+            従業員と学生の出欠を効率的に管理するシステムです。<br>
+            リアルタイムでの出欠登録、カレンダー表示、統計レポート機能を提供します。
+        </p>
+        
+        <a href="/linkup" class="btn">システムにアクセス</a>
+        
+        <div class="features">
+            <div class="feature">
+                <span class="feature-icon">🔐</span>
+                <span>セキュアなユーザー認証</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">📱</span>
+                <span>モバイル対応のレスポンシブデザイン</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">📊</span>
+                <span>リアルタイム統計とレポート</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">📅</span>
+                <span>カレンダー形式での出欠表示</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">👥</span>
+                <span>学生・グループ管理機能</span>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 出欠管理システム - Node.js + React + MySQL</p>
+        </div>
+    </div>
+</body>
+</html>
