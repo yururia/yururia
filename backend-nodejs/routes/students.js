@@ -324,4 +324,41 @@ router.get('/:studentId/groups', authenticate, async (req, res) => {
   }
 });
 
+/**
+ * グループ招待への応答
+ */
+router.post('/:studentId/groups/:groupId/respond', authenticate, [
+  body('action')
+    .isIn(['accept', 'decline'])
+    .withMessage('有効なアクションを指定してください')
+], async (req, res) => {
+  try {
+    const { studentId, groupId } = req.params;
+    const { action } = req.body;
+
+    // 権限チェック: 本人のみ
+    if (req.user.role === 'student' && req.user.studentId !== studentId) {
+      return res.status(403).json({
+        success: false,
+        message: '他の学生の招待には応答できません'
+      });
+    }
+
+    const status = action === 'accept' ? 'accepted' : 'declined';
+    const result = await GroupService.updateMemberStatus(groupId, studentId, status);
+
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    logger.error('グループ招待応答APIエラー:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'サーバーエラーが発生しました'
+    });
+  }
+});
+
 module.exports = router;

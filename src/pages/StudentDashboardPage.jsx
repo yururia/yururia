@@ -98,13 +98,13 @@ const StudentDashboardPage = () => {
     }
   };
 
-  const handleAcceptInvitation = async (membershipId) => {
+  const handleAcceptInvitation = async (groupId) => {
     requireAuth(async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        const response = await attendanceApi.acceptInvitation(membershipId, user.studentId);
+        const response = await attendanceApi.respondToInvitation(user.studentId, groupId, 'accept');
 
         if (response.success) {
           await loadStudentData(); // データを再読み込み
@@ -291,16 +291,7 @@ const StudentDashboardPage = () => {
                   <div className="invitation-actions">
                     <button
                       className="btn btn--primary"
-                      onClick={() => {
-                        // 自分のメンバーシップIDを探す
-                        const myMemberInfo = invitation.members?.find(m => m.student_id === user.studentId);
-                        if (myMemberInfo && myMemberInfo.id) {
-                          handleAcceptInvitation(myMemberInfo.id);
-                        } else {
-                          console.error('メンバーシップIDが見つかりません', invitation);
-                          setError('招待情報の取得に失敗しました');
-                        }
-                      }}
+                      onClick={() => handleAcceptInvitation(invitation.id)}
                       disabled={isLoading}
                     >
                       参加する
