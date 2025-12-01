@@ -11,14 +11,7 @@ root.render(
   </React.StrictMode>
 );
 
-// PWAのService Workerを登録
-registerServiceWorker().catch((error) => {
-  // 開発環境でのみエラーログ出力
-  if (process.env.NODE_ENV === 'development') {
-    // eslint-disable-next-line no-console
-  console.error('Service Worker登録エラー:', error);
-  }
-});
+
 
 // パフォーマンス測定（本番環境でのみ）
 if (process.env.NODE_ENV === 'production') {

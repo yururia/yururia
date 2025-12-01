@@ -5,6 +5,8 @@ import { attendanceApi } from './api/attendanceApi';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Header from './components/layout/Header';
 import ToastContainer from './components/common/ToastContainer'; // [追加]
+import { registerServiceWorker } from './services/pwaService';
+import UpdateNotification from './components/common/UpdateNotification';
 import './styles/global.css';
 
 // コード分割と遅延読み込み
@@ -335,11 +337,46 @@ const AppContent = React.memo(() => {
 
 // アプリケーションのルートコンポーネント
 const App = () => {
+  const [waitingWorker, setWaitingWorker] = React.useState(null);
+  const [showUpdateNotification, setShowUpdateNotification] = React.useState(false);
+
+  useEffect(() => {
+    // PWAのService Workerを登録
+    registerServiceWorker({
+      onUpdate: (registration) => {
+        setWaitingWorker(registration.waiting);
+        setShowUpdateNotification(true);
+      }
+    }).catch((error) => {
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('Service Worker登録エラー:', error);
+      }
+    });
+  }, []);
+
+  const handleUpdate = () => {
+    if (waitingWorker) {
+      waitingWorker.postMessage({ action: 'skipWaiting' });
+    }
+    // リロードはService Workerのcontrollerchangeイベントで処理されるのが理想だが、
+    // 簡易的にここでリロードする（pwaService.jsの実装依存）
+    // pwaService.jsでは reload() を呼んでいないため、ここで呼ぶか、
+    // controllerchangeを監視する必要がある。
+    // 今回は手動でリロードする。
+    window.location.reload();
+  };
+
   return (
     <ErrorBoundary>
       <Router>
         <AppContent />
-        <ToastContainer /> {/* [追加] */}
+        <ToastContainer />
+        <UpdateNotification
+          show={showUpdateNotification}
+          onUpdate={handleUpdate}
+          onClose={() => setShowUpdateNotification(false)}
+        />
       </Router>
     </ErrorBoundary>
   );

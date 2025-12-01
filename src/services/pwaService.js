@@ -3,12 +3,12 @@
 /**
  * Service Workerを登録する
  */
-export const registerServiceWorker = async () => {
+export const registerServiceWorker = async (config) => {
   if ('serviceWorker' in navigator) {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js');
       console.log('Service Worker登録成功:', registration);
-      
+
       // 更新の確認
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
@@ -16,15 +16,14 @@ export const registerServiceWorker = async () => {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               // 新しいバージョンが利用可能
-              if (confirm('新しいバージョンが利用可能です。更新しますか？')) {
-                newWorker.postMessage({ action: 'skipWaiting' });
-                window.location.reload();
+              if (config && config.onUpdate) {
+                config.onUpdate(registration);
               }
             }
           });
         }
       });
-      
+
       return registration;
     } catch (error) {
       console.error('Service Worker登録失敗:', error);
@@ -89,13 +88,13 @@ export class PWAInstallManager {
     try {
       this.deferredPrompt.prompt();
       const { outcome } = await this.deferredPrompt.userChoice;
-      
+
       if (outcome === 'accepted') {
         console.log('PWAインストールが承認されました');
       } else {
         console.log('PWAインストールが拒否されました');
       }
-      
+
       this.deferredPrompt = null;
       this.hideInstallButton();
       return outcome === 'accepted';
@@ -140,9 +139,9 @@ export class OfflineManager {
     const notification = document.createElement('div');
     notification.className = `notification notification--${type}`;
     notification.textContent = message;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
       notification.remove();
     }, 3000);
@@ -198,7 +197,7 @@ export class NotificationManager {
 
     try {
       const notification = new Notification(title, defaultOptions);
-      
+
       notification.onclick = () => {
         window.focus();
         notification.close();
@@ -236,10 +235,10 @@ export class BackgroundSyncManager {
     try {
       const registration = await navigator.serviceWorker.ready;
       await registration.sync.register(tag);
-      
+
       // データをIndexedDBに保存
       await this.saveSyncData(tag, data);
-      
+
       console.log(`バックグラウンド同期を登録しました: ${tag}`);
       return true;
     } catch (error) {
