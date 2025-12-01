@@ -291,7 +291,16 @@ const StudentDashboardPage = () => {
                   <div className="invitation-actions">
                     <button
                       className="btn btn--primary"
-                      onClick={() => handleAcceptInvitation(invitation.id)}
+                      onClick={() => {
+                        // 自分のメンバーシップIDを探す
+                        const myMemberInfo = invitation.members?.find(m => m.student_id === user.studentId);
+                        if (myMemberInfo && myMemberInfo.id) {
+                          handleAcceptInvitation(myMemberInfo.id);
+                        } else {
+                          console.error('メンバーシップIDが見つかりません', invitation);
+                          setError('招待情報の取得に失敗しました');
+                        }
+                      }}
                       disabled={isLoading}
                     >
                       参加する
