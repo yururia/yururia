@@ -5,7 +5,7 @@ import { attendanceApi } from './api/attendanceApi';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Header from './components/layout/Header';
 import ToastContainer from './components/common/ToastContainer'; // [追加]
-import { registerServiceWorker } from './services/pwaService';
+import { registerServiceWorker, unregister } from './services/pwaService';
 import UpdateNotification from './components/common/UpdateNotification';
 import './styles/global.css';
 
@@ -335,8 +335,6 @@ const AppContent = React.memo(() => {
   );
 });
 
-import { registerServiceWorker, unregister } from './services/pwaService';
-import UpdateNotification from './components/common/UpdateNotification';
 
 // アプリケーションのルートコンポーネント
 const App = () => {
