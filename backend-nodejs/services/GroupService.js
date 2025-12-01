@@ -125,7 +125,7 @@ class GroupService {
         const placeholders = groupIds.map(() => '?').join(',');
 
         const allMembers = await query(
-          `SELECT gm.group_id, s.student_id, s.name, gm.status, gm.joined_at 
+          `SELECT gm.id, gm.group_id, s.student_id, s.name, gm.status, gm.joined_at 
             FROM group_members gm
             JOIN students s ON gm.student_id = s.student_id
             WHERE gm.group_id IN (${placeholders})`,
