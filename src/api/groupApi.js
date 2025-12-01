@@ -116,7 +116,7 @@ export const groupApi = {
      */
     addMember: async (groupId, studentId, joinedAt = new Date()) => {
         return apiClient.post(`/groups/${groupId}/members`, {
-            studentId,
+            studentId: studentId,
             joinedAt: joinedAt.toISOString().split('T')[0]
         });
     },

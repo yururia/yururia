@@ -133,17 +133,17 @@ router.post('/register', [
     .isIn(['employee', 'student'])
     .withMessage('役割はemployeeまたはstudentである必要があります'),
   body('employeeId')
-    .optional()
+    .optional({ checkFalsy: true }) // 空文字列もスキップ
     .trim()
     .isLength({ min: 1, max: 50 })
     .withMessage('社員IDは1文字以上50文字以下で入力してください'),
   body('studentId')
-    .optional()
+    .optional({ checkFalsy: true }) // 空文字列もスキップ
     .trim()
     .isLength({ min: 1, max: 255 })
     .withMessage('学生IDは1文字以上255文字以下で入力してください'),
   body('department')
-    .optional()
+    .optional({ checkFalsy: true }) // 空文字列もスキップ
     .trim()
     .isLength({ max: 100 })
     .withMessage('部署名は100文字以下で入力してください')

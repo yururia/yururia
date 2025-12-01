@@ -236,7 +236,7 @@ class AuthService {
         }
       };
     } catch (error) {
-      logger.error('新規登録エラー:', error.message);
+      logger.error('新規登録エラー:', { message: error.message, stack: error.stack });
       return {
         success: false,
         message: 'サーバーエラーが発生しました'

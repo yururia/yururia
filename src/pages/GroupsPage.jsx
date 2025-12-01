@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import useAuthStore from '../stores/authStore';
 import { useLoginRedirect } from '../hooks/useLoginRedirect';
 import { groupApi } from '../api';
@@ -24,15 +24,15 @@ const GroupsPage = () => {
     description: ''
   });
 
-  const loadGroups = useCallback(async () => {
+  const loadGroups = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
       const response = await groupApi.getGroups();
 
-      if (response.success && response.data) {
-        setGroups(Array.isArray(response.data) ? response.data : []);
+      if (response.success && response.data && response.data.groups) {
+        setGroups(Array.isArray(response.data.groups) ? response.data.groups : []);
       } else {
         setError(response.message || 'グループ一覧の読み込みに失敗しました');
       }
@@ -41,14 +41,15 @@ const GroupsPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     requireAuth();
     if (isAuthenticated) {
       loadGroups();
     }
-  }, [isAuthenticated, requireAuth, loadGroups]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

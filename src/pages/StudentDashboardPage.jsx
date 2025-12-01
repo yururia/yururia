@@ -17,18 +17,19 @@ const StudentDashboardPage = () => {
   const [classSelectionData, setClassSelectionData] = useState(null);
 
   useEffect(() => {
-    if (isAuthenticated && user?.student_id) {
+    if (isAuthenticated && user?.studentId) {
       loadStudentData();
     }
-  }, [isAuthenticated, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.studentId]);
 
   const loadStudentData = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // 管理者プレビューモードの場合（student_idがない場合）
-      if (!user.student_id) {
+      // 管理者プレビューモードの場合（studentIdがない場合）
+      if (!user.studentId) {
         // ダミーデータをセットして終了
         setGroups([
           {
@@ -62,14 +63,23 @@ const StudentDashboardPage = () => {
       }
 
       // 学生のグループ一覧を取得
-      const response = await attendanceApi.getStudentGroups(user.student_id);
+      const response = await attendanceApi.getStudentGroups(user.studentId);
 
       if (response.success) {
         const studentGroups = response.data.groups;
 
+        // グループごとのステータスを判定（バックエンドがstatusを直接返さない場合、membersから判定）
+        const groupsWithStatus = studentGroups.map(group => {
+          const myMemberInfo = group.members?.find(m => m.student_id === user.studentId);
+          return {
+            ...group,
+            status: myMemberInfo ? myMemberInfo.status : group.status
+          };
+        });
+
         // 参加済みグループと招待中のグループを分離
-        const joinedGroups = studentGroups.filter(group => group.status === 'joined');
-        const invitedGroups = studentGroups.filter(group => group.status === 'invited');
+        const joinedGroups = groupsWithStatus.filter(group => group.status === 'accepted' || group.status === 'joined');
+        const invitedGroups = groupsWithStatus.filter(group => group.status === 'pending' || group.status === 'invited');
 
         setGroups(joinedGroups);
         setInvitations(invitedGroups);
@@ -94,7 +104,7 @@ const StudentDashboardPage = () => {
         setIsLoading(true);
         setError(null);
 
-        const response = await attendanceApi.acceptInvitation(membershipId, user.student_id);
+        const response = await attendanceApi.acceptInvitation(membershipId, user.studentId);
 
         if (response.success) {
           await loadStudentData(); // データを再読み込み
@@ -213,7 +223,7 @@ const StudentDashboardPage = () => {
     <div className="student-dashboard-page">
       <div className="student-dashboard-container">
         <div className="dashboard-header">
-          {!user?.student_id && (
+          {!user?.studentId && (
             <div style={{
               backgroundColor: '#fff3cd',
               color: '#856404',
@@ -232,7 +242,7 @@ const StudentDashboardPage = () => {
           <h1>学生ダッシュボード</h1>
           <div className="student-info">
             <p>ようこそ、{user?.name || '学生'}さん</p>
-            <p>学生ID: {user?.student_id || 'PREVIEW'}</p>
+            <p>学生ID: {user?.studentId || 'PREVIEW'}</p>
           </div>
         </div>
 

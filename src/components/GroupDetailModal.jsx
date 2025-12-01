@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { groupApi } from '../api';
 import './GroupDetailModal.css';
 
@@ -22,13 +22,7 @@ const GroupDetailModal = ({ group, onClose, onUpdate }) => {
     const [newTeacherUserId, setNewTeacherUserId] = useState('');
     const [newTeacherRole, setNewTeacherRole] = useState('main');
 
-    useEffect(() => {
-        if (group) {
-            fetchGroupDetails();
-        }
-    }, [group]);
-
-    const fetchGroupDetails = async () => {
+    const fetchGroupDetails = useCallback(async () => {
         setLoading(true);
         setError(null);
 
@@ -39,18 +33,28 @@ const GroupDetailModal = ({ group, onClose, onUpdate }) => {
             ]);
 
             if (membersResponse.success) {
-                setMembers(membersResponse.data);
+                // membersResponse.data.members が配列であることを確認
+                const membersData = membersResponse.data && membersResponse.data.members;
+                setMembers(Array.isArray(membersData) ? membersData : []);
             }
 
             if (teachersResponse.success) {
-                setTeachers(teachersResponse.data);
+                // teachersResponse.data.teachers が配列であることを確認
+                const teachersData = teachersResponse.data && teachersResponse.data.teachers;
+                setTeachers(Array.isArray(teachersData) ? teachersData : []);
             }
         } catch (err) {
             setError(err.message || 'データの取得に失敗しました');
         } finally {
             setLoading(false);
         }
-    };
+    }, [group.id]);
+
+    useEffect(() => {
+        if (group?.id) {
+            fetchGroupDetails();
+        }
+    }, [group?.id, fetchGroupDetails]);
 
     const handleAddMember = async () => {
         if (!newMemberStudentId) {

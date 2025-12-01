@@ -337,7 +337,7 @@ const AppContent = React.memo(() => {
 const App = () => {
   return (
     <ErrorBoundary>
-      <Router basename="/linkup">
+      <Router>
         <AppContent />
         <ToastContainer /> {/* [追加] */}
       </Router>

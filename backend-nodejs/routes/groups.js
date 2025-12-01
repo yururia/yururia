@@ -169,7 +169,7 @@ router.put('/:id', authenticate, requireRole(['admin', 'teacher', 'employee']), 
  * グループメンバーの追加
  */
 router.post('/:id/members', authenticate, requireRole(['admin', 'teacher', 'employee']), [
-  body('student_id')
+  body('studentId')
     .trim()
     .isLength({ min: 1, max: 255 })
     .withMessage('学生IDは1文字以上255文字以下で入力してください'),
@@ -195,9 +195,9 @@ router.post('/:id/members', authenticate, requireRole(['admin', 'teacher', 'empl
     }
 
     const { id } = req.params;
-    const { student_id } = req.body;
+    const { studentId } = req.body;
 
-    const result = await GroupService.addMember(id, student_id, req.user.id);
+    const result = await GroupService.addMember(id, studentId, req.user.id);
 
     if (result.success) {
       res.status(201).json(result);
@@ -282,6 +282,74 @@ router.delete('/:id', authenticate, requireRole(['admin', 'employee']), async (r
   try {
     const { id } = req.params;
     const result = await GroupService.deleteGroup(id);
+
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * 担当教員一覧の取得
+ */
+router.get('/:id/teachers', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await GroupService.getTeachers(id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * 担当教員の追加
+ */
+router.post('/:id/teachers', authenticate, requireRole(['admin']), [
+  body('userId')
+    .isInt()
+    .withMessage('有効なユーザーIDを入力してください'),
+  body('role')
+    .optional()
+    .isIn(['main', 'assistant'])
+    .withMessage('有効な役割を選択してください')
+], async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: '入力データにエラーがあります',
+        errors: errors.array()
+      });
+    }
+
+    const { id } = req.params;
+    const { userId, role } = req.body;
+
+    const result = await GroupService.addTeacher(id, userId, role);
+
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * 担当教員の削除
+ */
+router.delete('/:id/teachers/:userId', authenticate, requireRole(['admin']), async (req, res, next) => {
+  try {
+    const { id, userId } = req.params;
+    const result = await GroupService.removeTeacher(id, userId);
 
     if (result.success) {
       res.json(result);

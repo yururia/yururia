@@ -49,6 +49,34 @@ apiClient.interceptors.response.use(
     if (error.response) {
       // サーバーからの応答がある場合
       errorResponse.status = error.response.status;
+
+      // Blobレスポンスのエラーハンドリング (JSONパース試行)
+      if (error.response.config && error.response.config.responseType === 'blob' && error.response.data instanceof Blob) {
+        // BlobをJSONに変換してエラーメッセージを取得する非同期処理が必要だが、
+        // インターセプター内ではPromiseを返すことで対応
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const errorData = JSON.parse(reader.result);
+              errorResponse.message = errorData.message || `API接続エラー: ${error.response.statusText}`;
+              errorResponse.data = errorData;
+              console.error('API Error (Blob):', errorResponse.message);
+              reject(errorResponse);
+            } catch (e) {
+              errorResponse.message = `API接続エラー: ${error.response.statusText}`;
+              console.error('API Error (Blob parse failed):', errorResponse.message);
+              reject(errorResponse);
+            }
+          };
+          reader.onerror = () => {
+            errorResponse.message = `API接続エラー: ${error.response.statusText}`;
+            reject(errorResponse);
+          };
+          reader.readAsText(error.response.data);
+        });
+      }
+
       if (error.response.data && error.response.data.message) {
         errorResponse.message = error.response.data.message;
       } else {

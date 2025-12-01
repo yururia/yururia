@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
 const StudentService = require('../services/StudentService');
+const GroupService = require('../services/GroupService');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
@@ -285,6 +286,37 @@ router.delete('/:studentId', authenticate, requireAdmin, async (req, res) => {
     }
   } catch (error) {
     logger.error('学生削除APIエラー:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'サーバーエラーが発生しました'
+    });
+  }
+});
+
+/**
+ * 学生の参加グループ取得
+ */
+router.get('/:studentId/groups', authenticate, async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    // 権限チェック: 本人、教員、管理者のみ
+    if (req.user.role === 'student' && req.user.studentId !== studentId) {
+      return res.status(403).json({
+        success: false,
+        message: '他の学生のグループ情報は閲覧できません'
+      });
+    }
+
+    // GroupService.getGroups を再利用
+    const result = await GroupService.getGroups({
+      student_id: studentId,
+      include_members: true // メンバー情報も含める（必要に応じて）
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.error('学生グループ取得APIエラー:', error.message);
     res.status(500).json({
       success: false,
       message: 'サーバーエラーが発生しました'

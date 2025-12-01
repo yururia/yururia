@@ -10,17 +10,22 @@ class JWTUtil {
    */
   static generateToken(payload) {
     try {
+      // JWT_EXPIRES_INを数値に変換（デフォルトは7日間 = 604800秒）
+      const expiresIn = process.env.JWT_EXPIRES_IN
+        ? parseInt(process.env.JWT_EXPIRES_IN, 10)
+        : 604800;
+
       const token = jwt.sign(
         payload,
         process.env.JWT_SECRET,
         {
-          expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+          expiresIn: expiresIn,
           issuer: 'attendance-app',
           audience: 'attendance-app-client'
         }
       );
 
-      logger.debug('JWTトークンを生成しました', { userId: payload.id });
+      logger.debug('JWTトークンを生成しました', { userId: payload.id, expiresIn });
       return token;
     } catch (error) {
       logger.error('JWTトークン生成エラー:', error.message);

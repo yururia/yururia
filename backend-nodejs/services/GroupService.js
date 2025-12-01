@@ -17,7 +17,8 @@ class GroupService {
       const result = await transaction(async (conn) => {
         const existingGroups = await query(
           'SELECT id FROM `groups` WHERE name = ?',
-          [data.name]
+          [data.name],
+          conn
         );
 
         if (existingGroups.length > 0) {
@@ -31,7 +32,8 @@ class GroupService {
             data.description || null,
             creatorId, // [修正] 作成者IDをセット
             data.is_active !== undefined ? data.is_active : true
-          ]
+          ],
+          conn
         );
 
         return {
@@ -111,18 +113,37 @@ class GroupService {
         params.push(parseInt(offset));
       }
 
+      // デバッグログ
+      logger.debug('グループ取得SQL:', { sql, params, options });
+
       let groups = await query(sql, params);
 
       if (include_members && groups.length > 0) {
+        const groupIds = groups.map(g => g.id);
+
+        // プレースホルダーの生成 (?,?,...)
+        const placeholders = groupIds.map(() => '?').join(',');
+
+        const allMembers = await query(
+          `SELECT gm.group_id, s.student_id, s.name, gm.status, gm.joined_at 
+            FROM group_members gm
+            JOIN students s ON gm.student_id = s.student_id
+            WHERE gm.group_id IN (${placeholders})`,
+          groupIds
+        );
+
+        // グループIDごとにメンバーをマッピング
+        const membersMap = {};
+        allMembers.forEach(member => {
+          if (!membersMap[member.group_id]) {
+            membersMap[member.group_id] = [];
+          }
+          membersMap[member.group_id].push(member);
+        });
+
+        // 各グループにメンバーを割り当て
         for (const group of groups) {
-          const members = await query(
-            `SELECT s.student_id, s.name, gm.status, gm.joined_at 
-              FROM group_members gm
-              JOIN students s ON gm.student_id = s.student_id
-              WHERE gm.group_id = ?`,
-            [group.id]
-          );
-          group.members = members;
+          group.members = membersMap[group.id] || [];
         }
       }
 
@@ -241,15 +262,16 @@ class GroupService {
   static async addMember(id, studentId, inviterId) {
     try {
       const result = await transaction(async (conn) => {
-        const groups = await query('SELECT id FROM `groups` WHERE id = ?', [id]);
+        const groups = await query('SELECT id FROM `groups` WHERE id = ?', [id], conn);
         if (groups.length === 0) throw new Error('グループが見つかりません');
 
-        const students = await query('SELECT student_id FROM students WHERE student_id = ?', [studentId]);
+        const students = await query('SELECT student_id FROM students WHERE student_id = ?', [studentId], conn);
         if (students.length === 0) throw new Error('学生が見つかりません');
 
         const existingMember = await query(
           'SELECT group_id FROM group_members WHERE group_id = ? AND student_id = ?',
-          [id, studentId]
+          [id, studentId],
+          conn
         );
 
         if (existingMember.length > 0) {
@@ -259,7 +281,8 @@ class GroupService {
         // [修正] 'status' を 'pending' で挿入
         await query(
           'INSERT INTO group_members (group_id, student_id, invited_by, status) VALUES (?, ?, ?, ?)',
-          [id, studentId, inviterId, 'pending']
+          [id, studentId, inviterId, 'pending'],
+          conn
         );
 
         return {
@@ -365,7 +388,8 @@ class GroupService {
       const result = await transaction(async (conn) => {
         const existingMember = await query(
           'SELECT group_id FROM group_members WHERE group_id = ? AND student_id = ?',
-          [id, studentId]
+          [id, studentId],
+          conn
         );
 
         if (existingMember.length === 0) {
@@ -374,7 +398,8 @@ class GroupService {
 
         await query(
           'DELETE FROM group_members WHERE group_id = ? AND student_id = ?',
-          [id, studentId]
+          [id, studentId],
+          conn
         );
 
         return {
@@ -402,7 +427,8 @@ class GroupService {
       const result = await transaction(async (conn) => {
         const groups = await query(
           'SELECT id FROM `groups` WHERE id = ?',
-          [id]
+          [id],
+          conn
         );
 
         if (groups.length === 0) {
@@ -411,12 +437,14 @@ class GroupService {
 
         await query(
           'DELETE FROM group_members WHERE group_id = ?',
-          [id]
+          [id],
+          conn
         );
 
         await query(
           'DELETE FROM `groups` WHERE id = ?',
-          [id]
+          [id],
+          conn
         );
 
         return {
@@ -441,10 +469,10 @@ class GroupService {
   static async addTeacher(groupId, userId, role = 'main') {
     try {
       const result = await transaction(async (conn) => {
-        const groups = await query('SELECT id FROM `groups` WHERE id = ?', [groupId]);
+        const groups = await query('SELECT id FROM `groups` WHERE id = ?', [groupId], conn);
         if (groups.length === 0) throw new Error('グループが見つかりません');
 
-        const users = await query('SELECT id, role FROM users WHERE id = ?', [userId]);
+        const users = await query('SELECT id, role FROM users WHERE id = ?', [userId], conn);
         if (users.length === 0) throw new Error('ユーザーが見つかりません');
         if (users[0].role !== 'teacher' && users[0].role !== 'admin') {
           throw new Error('教員または管理者のみ担当になれます');
@@ -452,7 +480,8 @@ class GroupService {
 
         const existingTeacher = await query(
           'SELECT id FROM group_teachers WHERE group_id = ? AND user_id = ?',
-          [groupId, userId]
+          [groupId, userId],
+          conn
         );
 
         if (existingTeacher.length > 0) {
@@ -461,7 +490,8 @@ class GroupService {
 
         await query(
           'INSERT INTO group_teachers (group_id, user_id, role, assigned_at) VALUES (?, ?, ?, CURDATE())',
-          [groupId, userId, role]
+          [groupId, userId, role],
+          conn
         );
 
         return {
@@ -489,7 +519,8 @@ class GroupService {
       const result = await transaction(async (conn) => {
         const existingTeacher = await query(
           'SELECT id FROM group_teachers WHERE group_id = ? AND user_id = ?',
-          [groupId, userId]
+          [groupId, userId],
+          conn
         );
 
         if (existingTeacher.length === 0) {
@@ -498,7 +529,8 @@ class GroupService {
 
         await query(
           'DELETE FROM group_teachers WHERE group_id = ? AND user_id = ?',
-          [groupId, userId]
+          [groupId, userId],
+          conn
         );
 
         return {
