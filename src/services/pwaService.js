@@ -36,6 +36,21 @@ export const registerServiceWorker = async (config) => {
 };
 
 /**
+ * Service Workerを解除する
+ */
+export const unregister = async () => {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.unregister();
+      console.log('Service Worker解除成功');
+    } catch (error) {
+      console.error('Service Worker解除失敗:', error);
+    }
+  }
+};
+
+/**
  * PWAのインストールプロンプトを管理する
  */
 export class PWAInstallManager {

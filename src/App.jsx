@@ -335,13 +335,22 @@ const AppContent = React.memo(() => {
   );
 });
 
+import { registerServiceWorker, unregister } from './services/pwaService';
+import UpdateNotification from './components/common/UpdateNotification';
+
 // アプリケーションのルートコンポーネント
 const App = () => {
   const [waitingWorker, setWaitingWorker] = React.useState(null);
   const [showUpdateNotification, setShowUpdateNotification] = React.useState(false);
 
   useEffect(() => {
-    // PWAのService Workerを登録
+    // 開発環境ではService Workerを解除して、常に最新の状態にする
+    if (process.env.NODE_ENV === 'development') {
+      unregister();
+      return;
+    }
+
+    // 本番環境ではPWAのService Workerを登録
     registerServiceWorker({
       onUpdate: (registration) => {
         setWaitingWorker(registration.waiting);
