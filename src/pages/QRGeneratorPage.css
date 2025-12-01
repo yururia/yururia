@@ -1,0 +1,419 @@
+.qr-generator-page {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.qr-generator-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.page-header {
+    margin-bottom: 16px;
+}
+
+.page-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+    font-size: 16px;
+    color: #666;
+    margin: 0;
+}
+
+.error-banner {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 12px 16px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.error-banner button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #991b1b;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+}
+
+.qr-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+/* QR生成フォーム */
+.qr-form-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.qr-form-section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 20px 0;
+}
+
+.qr-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-input,
+.form-textarea {
+    padding: 10px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+    resize: vertical;
+}
+
+.form-hint {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* QR表示セクション */
+.qr-display-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    grid-column: span 2;
+}
+
+.qr-display-section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 20px 0;
+}
+
+.qr-display-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 24px;
+    padding: 20px;
+    background: #f9fafb;
+    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+}
+
+.qr-image-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 200px;
+    min-height: 200px;
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.qr-image {
+    max-width: 200px;
+    height: auto;
+    border-radius: 4px;
+}
+
+.qr-placeholder {
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.qr-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.qr-info h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.qr-description {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.qr-meta {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.qr-code-text {
+    font-size: 13px;
+    font-family: monospace;
+    color: #6b7280;
+    background: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.qr-status {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.qr-status.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.qr-status.inactive {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.qr-expiry {
+    font-size: 13px;
+    color: #f59e0b;
+    margin: 4px 0 0 0;
+}
+
+.qr-actions {
+    grid-column: span 2;
+    display: flex;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* QR履歴 */
+.qr-history-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    grid-column: span 2;
+}
+
+.qr-history-section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 20px 0;
+}
+
+.qr-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.qr-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.qr-history-item:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.qr-history-info h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 4px 0;
+}
+
+.qr-history-date {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.qr-history-desc {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 4px 0 0 0;
+}
+
+.qr-history-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-badge.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge.inactive {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #6b7280;
+}
+
+.empty-state p {
+    font-size: 16px;
+    margin: 0;
+}
+
+/* ボタン */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn--primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn--primary:hover:not(:disabled) {
+    background: #2563eb;
+}
+
+.btn--secondary {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.btn--secondary:hover:not(:disabled) {
+    background: #e5e7eb;
+}
+
+.btn--danger {
+    background: #ef4444;
+    color: white;
+}
+
+.btn--danger:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+.btn--large {
+    padding: 12px 32px;
+    font-size: 16px;
+    width: 100%;
+}
+
+.btn--sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* レスポンシブ */
+@media (max-width: 1024px) {
+    .qr-content {
+        grid-template-columns: 1fr;
+    }
+
+    .qr-display-section,
+    .qr-history-section {
+        grid-column: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .qr-generator-page {
+        padding: 16px;
+    }
+
+    .qr-display-card {
+        grid-template-columns: 1fr;
+    }
+
+    .qr-image-container {
+        min-width: auto;
+    }
+
+    .qr-actions {
+        flex-direction: column;
+    }
+
+    .qr-history-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .qr-history-status {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
