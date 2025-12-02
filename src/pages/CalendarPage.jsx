@@ -123,31 +123,6 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
     const month = currentDate.getMonth() + 1;
     const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
-
-    return await attendanceApi.exportAttendanceRecords(startDate, endDate);
-  };
-
-  // [追加] 右クリックハンドラー (学生のみ、未来の日付)
-  const handleContextMenu = (e, date) => {
-    console.log('[Calendar Debug] Context menu triggered:', {
-      role: user?.role,
-      date: date,
-      isStudent: user?.role === 'student',
-      isFutureDate: date && date >= new Date().setHours(0, 0, 0, 0)
-    });
-
-    if (user?.role === 'student' && date && date >= new Date().setHours(0, 0, 0, 0)) {
-      e.preventDefault();
-      console.log('[Calendar Debug] Opening absence request modal for date:', date);
-      setSelectedDate(date);
-      setShowAbsenceRequest(true);
-    } else {
-      console.log('[Calendar Debug] Context menu not triggered - conditions not met');
-    }
-  };
-
-  // [追加] 日付クリックハンドラー (教員のみ)
-  const handleDateClick = async (date) => {
     console.log('[Calendar Debug] Date clicked:', {
       role: user?.role,
       date: date,
