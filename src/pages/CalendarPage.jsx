@@ -3,6 +3,8 @@ import useAuthStore from '../stores/authStore';
 import { attendanceApi } from '../api/attendanceApi';
 import { formatDate, getMonthDays, isToday, formatTime as formatTimeUtil } from '../utils/dateUtils';
 import ExportButton from '../components/common/ExportButton';
+import AbsenceRequestModal from '../components/calendar/AbsenceRequestModal';
+import AbsenceListModal from '../components/calendar/AbsenceListModal';
 import './CalendarPage.css';
 
 const CalendarPage = React.memo(({ isDashboardMode = false }) => {
@@ -10,8 +12,15 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [attendanceRecords, setAttendanceRecords] = useState({});
   const [events, setEvents] = useState({}); // [追加] イベント用 state
+  const [dailyStats, setDailyStats] = useState({}); // [追加] 日次統計
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // モーダル用 state
+  const [showAbsenceRequest, setShowAbsenceRequest] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [showAbsenceList, setShowAbsenceList] = useState(false);
+  const [absenceData, setAbsenceData] = useState(null);
 
   const loadCalendarData = useCallback(async () => {
     try {
@@ -30,13 +39,14 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
       const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
       const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
-      // [修正] Promise.allで出欠とイベントを同時に取得
-      const [attendanceResponse, eventResponse] = await Promise.all([
+      // [修正] Promise.allで出欠、イベント、統計を同時に取得
+      const [attendanceResponse, eventResponse, statsResponse] = await Promise.all([
         attendanceApi.getMonthlyReport(userId, year, month),
         attendanceApi.getEvents({
           start_date: startDate,
           end_date: endDate,
-        })
+        }),
+        attendanceApi.getDailyStats(year, month)
       ]);
 
       // 1. 出欠記録の処理
@@ -76,6 +86,11 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
         throw new Error(eventResponse?.message || 'イベントデータの取得に失敗しました');
       }
 
+      // 3. [追加] 日次統計の処理
+      if (statsResponse && statsResponse.success) {
+        setDailyStats(statsResponse.data || {});
+      }
+
     } catch (err) {
       console.error('カレンダーデータ読み込みエラー:', err);
       setError('カレンダーデータの読み込みに失敗しました');
@@ -101,6 +116,38 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
     return await attendanceApi.exportAttendanceRecords(startDate, endDate);
+  };
+
+  // [追加] 右クリックハンドラー (学生のみ、未来の日付)
+  const handleContextMenu = (e, date) => {
+    if (user?.role === 'student' && date && date >= new Date().setHours(0, 0, 0, 0)) {
+      e.preventDefault();
+      setSelectedDate(date);
+      setShowAbsenceRequest(true);
+    }
+  };
+
+  // [追加] 日付クリックハンドラー (教員のみ)
+  const handleDateClick = async (date) => {
+    if ((user?.role === 'teacher' || user?.role === 'admin') && date) {
+      try {
+        const dateStr = formatDate(date, 'YYYY-MM-DD');
+        const response = await attendanceApi.getAbsenceDetails(dateStr);
+        if (response.success) {
+          setAbsenceData(response.data);
+          setSelectedDate(date);
+          setShowAbsenceList(true);
+        }
+      } catch (err) {
+        console.error('欠席詳細取得エラー:', err);
+      }
+    }
+  };
+
+  // [追加] 欠席申請送信
+  const handleAbsenceSubmit = async (formData) => {
+    await attendanceApi.submitAbsenceRequest(formData);
+    loadCalendarData(); // カレンダーを再読込
   };
 
   const calendarDays = useMemo(() => {
@@ -193,8 +240,20 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
                 dayEvents.length > 0 ? 'has-event' : ''
               ].join(' ');
 
+              // [追加] ツールチップ用タイトル
+              const stats = day.date ? dailyStats[dateStr] : null;
+              const tooltipText = stats
+                ? `欠席: ${stats.absent || 0}名, 遅刻: ${stats.late || 0}名, 早退: ${stats.early_departure || 0}名`
+                : '';
+
               return (
-                <div key={index} className={dayClasses}>
+                <div
+                  key={index}
+                  className={dayClasses}
+                  onContextMenu={(e) => handleContextMenu(e, day.date)}
+                  onClick={() => handleDateClick(day.date)}
+                  title={tooltipText}
+                >
                   <div className="day-number">{day.day}</div>
                   {isCurrentMonth && (
                     <div className="day-content">
@@ -272,6 +331,22 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
             <span>イベント</span>
           </div>
         </div>
+
+        {/* [追加] 欠席申請モーダル (学生用) */}
+        <AbsenceRequestModal
+          isOpen={showAbsenceRequest}
+          onClose={() => setShowAbsenceRequest(false)}
+          defaultDate={selectedDate}
+          onSubmit={handleAbsenceSubmit}
+        />
+
+        {/* [追加] 欠席者リストモーダル (教員用) */}
+        <AbsenceListModal
+          isOpen={showAbsenceList}
+          onClose={() => setShowAbsenceList(false)}
+          date={selectedDate}
+          absenceData={absenceData}
+        />
       </div>
     </div>
   );
