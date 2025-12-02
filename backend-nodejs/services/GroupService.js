@@ -26,9 +26,10 @@ class GroupService {
         }
 
         const insertResult = await query(
-          'INSERT INTO `groups` (name, description, created_by, is_active) VALUES (?, ?, ?, ?)',
+          'INSERT INTO `groups` (name, icon, description, created_by, is_active) VALUES (?, ?, ?, ?, ?)',
           [
             data.name,
+            data.icon || null,
             data.description || null,
             creatorId, // [修正] 作成者IDをセット
             data.is_active !== undefined ? data.is_active : true
@@ -71,7 +72,7 @@ class GroupService {
 
       let sql = `
         SELECT 
-          g.id, g.name, g.is_active, g.created_at, g.created_by,
+          g.id, g.name, g.icon, g.is_active, g.created_at, g.created_by,
           u.name as creator_name,
           (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) as member_count
         FROM \`groups\` g
@@ -170,7 +171,7 @@ class GroupService {
     try {
       const groups = await query(
         `SELECT 
-          g.id, g.name, g.description, g.is_active, g.created_at, g.created_by,
+          g.id, g.name, g.icon, g.description, g.is_active, g.created_at, g.created_by,
           u.name as creator_name,
           (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) as member_count
          FROM \`groups\` g
@@ -215,7 +216,7 @@ class GroupService {
    */
   static async updateGroup(id, updateData) {
     try {
-      const allowedFields = ['name', 'description', 'is_active'];
+      const allowedFields = ['name', 'icon', 'description', 'is_active'];
       const updateFields = [];
       const updateValues = [];
 

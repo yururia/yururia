@@ -284,6 +284,7 @@ const StudentDashboardPage = () => {
               {invitations.map((invitation) => (
                 <div key={invitation.id} className="invitation-card">
                   <div className="invitation-info">
+                    {invitation.icon && <span className="group-icon" style={{ fontSize: '1.5rem', marginRight: '8px' }}>{invitation.icon}</span>}
                     <h3>{invitation.group_name}</h3>
                     <p>招待者: {invitation.creator_name}</p>
                     <p>招待日: {new Date(invitation.created_at).toLocaleDateString('ja-JP')}</p>
@@ -320,6 +321,7 @@ const StudentDashboardPage = () => {
               {groups.map((group) => (
                 <div key={group.id} className="group-card">
                   <div className="group-card-header">
+                    {group.icon && <span className="group-icon" style={{ fontSize: '1.5rem', marginRight: '8px' }}>{group.icon}</span>}
                     <h3>{group.group_name}</h3>
                     <span className="group-status">参加中</span>
                   </div>
