@@ -45,8 +45,18 @@ router.use(authenticate);
  */
 router.post('/', upload.single('attachment'), async (req, res) => {
     try {
+        // 学生IDの確認
+        if (!req.user.student_id && req.user.role === 'student') {
+            // 学生ロールだがstudent_idがない場合はエラー
+            return res.status(400).json({
+                success: false,
+                message: '学生情報が見つかりません。管理者に連絡してください。'
+            });
+        }
+
         const requestData = {
             ...req.body,
+            studentId: req.user.student_id, // 認証ユーザーから学生IDを取得
             attachmentUrl: req.file ? `/uploads/absence-attachments/${req.file.filename}` : null
         };
 

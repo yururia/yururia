@@ -116,6 +116,54 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
 
   const changeMonth = (offset) => {
     setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
+  };
+
+  const handleExport = async () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+
+    return await attendanceApi.exportAttendanceRecords(startDate, endDate);
+  };
+
+  // [追加] 右クリックハンドラー (学生のみ、未来の日付)
+  const handleContextMenu = (e, date) => {
+    // 今日の0時0分0秒を取得
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    console.log('[Calendar Debug] Context menu triggered:', {
+      role: user?.role,
+      date: date,
+      today: today,
+      isStudent: user?.role === 'student',
+      isFutureDate: date && date.getTime() >= today.getTime()
+    });
+
+    // 日付が存在し、かつ学生である場合のみ処理
+    if (date && user?.role === 'student') {
+      // 未来の日付（今日含む）かチェック
+      if (date.getTime() >= today.getTime()) {
+        e.preventDefault();
+        console.log('[Calendar Debug] Opening absence request modal for date:', date);
+        setSelectedDate(date);
+        setShowAbsenceRequest(true);
+      } else {
+        console.log('[Calendar Debug] Date is in the past, context menu allowed');
+      }
+    } else {
+      console.log('[Calendar Debug] Context menu not triggered - not student or no date');
+    }
+  };
+
+  // [追加] 日付クリックハンドラー (教員のみ)
+  const handleDateClick = async (date) => {
+    console.log('[Calendar Debug] Date clicked:', {
+      role: user?.role,
+      date: date,
+      isTeacherOrAdmin: user?.role === 'teacher' || user?.role === 'admin'
+    });
 
     if ((user?.role === 'teacher' || user?.role === 'admin') && date) {
       try {

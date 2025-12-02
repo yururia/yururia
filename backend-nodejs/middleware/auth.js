@@ -2,6 +2,7 @@ const JWTUtil = require('../utils/jwt');
 const AuthService = require('../services/AuthService');
 const RoleService = require('../services/RoleService');
 const logger = require('../utils/logger');
+const { query } = require('../config/database');
 
 /**
  * [完全版] 認証ミドルウェア
@@ -29,10 +30,10 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    const user = await AuthService.getUserFromToken(token);
+    const decoded = JWTUtil.verifyToken(token);
 
-    if (!user) {
-      logger.warn('認証失敗 - 無効なトークン', {
+    if (!decoded) {
+      logger.warn('認証失敗 - 無効なトークン構造', {
         ip: req.ip,
         userAgent: req.get('User-Agent')
       });
@@ -42,6 +43,25 @@ const authenticate = async (req, res, next) => {
       });
     }
 
+    // DBから最新のユーザー情報を取得
+    const users = await query(
+      'SELECT id, name, email, role, student_id, employee_id, department FROM users WHERE id = ?',
+      [decoded.id]
+    );
+
+    if (users.length === 0) {
+      logger.warn('認証失敗 - ユーザーが存在しません', {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        userId: decoded.id
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'ユーザーが存在しません'
+      });
+    }
+
+    const user = users[0];
     req.user = user;
 
     logger.debug('認証成功', {
@@ -150,9 +170,19 @@ const optionalAuth = async (req, res, next) => {
     }
 
     if (token) {
-      const user = await AuthService.getUserFromToken(token);
-      if (user) {
-        req.user = user;
+      try {
+        const decoded = JWTUtil.verifyToken(token);
+        if (decoded) {
+          const users = await query(
+            'SELECT id, name, email, role, student_id, employee_id, department FROM users WHERE id = ?',
+            [decoded.id]
+          );
+          if (users.length > 0) {
+            req.user = users[0];
+          }
+        }
+      } catch (err) {
+        // トークンが無効な場合は無視
       }
     }
 
