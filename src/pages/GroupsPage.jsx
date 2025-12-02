@@ -19,6 +19,7 @@ const GroupsPage = () => {
   // フォーム状態
   const [formData, setFormData] = useState({
     name: '',
+    icon: '',
     grade: '',
     academic_year: new Date().getFullYear().toString(),
     description: ''
@@ -69,6 +70,7 @@ const GroupsPage = () => {
 
       const response = await groupApi.createGroup({
         name: formData.name,
+        icon: formData.icon,
         grade: formData.grade,
         academic_year: formData.academic_year,
         description: formData.description
@@ -78,6 +80,7 @@ const GroupsPage = () => {
         setShowCreateForm(false);
         setFormData({
           name: '',
+          icon: '',
           grade: '',
           academic_year: new Date().getFullYear().toString(),
           description: ''
@@ -162,6 +165,15 @@ const GroupsPage = () => {
                   placeholder="例: 1年A組"
                 />
                 <Input
+                  label="アイコン（絵文字）"
+                  type="text"
+                  name="icon"
+                  value={formData.icon}
+                  onChange={handleInputChange}
+                  placeholder="例: 📚 📖 🎓"
+                  maxLength="10"
+                />
+                <Input
                   label="学年"
                   type="text"
                   name="grade"
@@ -211,6 +223,7 @@ const GroupsPage = () => {
                 <div key={group.id} className="group-card">
                   <div className="group-card-header">
                     <div>
+                      {group.icon && <span className="group-icon" style={{ fontSize: '1.5rem', marginRight: '8px' }}>{group.icon}</span>}
                       <h2 className="group-name">{group.name}</h2>
                       {group.grade && (
                         <span className="group-badge">{group.grade}</span>
