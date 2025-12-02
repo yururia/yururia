@@ -116,18 +116,6 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
 
   const changeMonth = (offset) => {
     setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
-  };
-
-  const handleExport = async () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1;
-    const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
-    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
-    console.log('[Calendar Debug] Date clicked:', {
-      role: user?.role,
-      date: date,
-      isTeacherOrAdmin: user?.role === 'teacher' || user?.role === 'admin'
-    });
 
     if ((user?.role === 'teacher' || user?.role === 'admin') && date) {
       try {
