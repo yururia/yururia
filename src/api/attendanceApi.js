@@ -303,6 +303,16 @@ export const attendanceApi = {
 
   // --- 欠席申請 ---
   submitAbsenceRequest: async (requestData) => {
-    return apiClient.post('/absence-requests', requestData);
+    const formData = new FormData();
+    Object.keys(requestData).forEach(key => {
+      if (requestData[key] !== null && requestData[key] !== undefined) {
+        formData.append(key, requestData[key]);
+      }
+    });
+    return apiClient.post('/absence-requests', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
   },
 };
