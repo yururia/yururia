@@ -289,4 +289,20 @@ export const attendanceApi = {
   updateRole: async (newRole, password) => {
     return apiClient.post('/users/me/role', { newRole, password });
   },
+
+  // --- カレンダー統計 ---
+  getDailyStats: async (year, month) => {
+    return apiClient.get('/attendance/daily-stats', {
+      params: { year, month }
+    });
+  },
+
+  getAbsenceDetails: async (date) => {
+    return apiClient.get(`/attendance/absence-details/${date}`);
+  },
+
+  // --- 欠席申請 ---
+  submitAbsenceRequest: async (requestData) => {
+    return apiClient.post('/absence-requests', requestData);
+  },
 };
