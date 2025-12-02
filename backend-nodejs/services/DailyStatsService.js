@@ -32,14 +32,42 @@ class DailyStatsService {
                 [startDate, endDate]
             );
 
+            // 承認待ちの申請数を取得
+            const pendingRequests = await query(
+                `SELECT 
+          request_date as date,
+          COUNT(*) as count
+        FROM absence_requests
+        WHERE request_date >= ? AND request_date <= ? AND status = 'pending'
+        GROUP BY request_date`,
+                [startDate, endDate]
+            );
+
             // 日付をキーとしたオブジェクトに変換
             const statsMap = {};
             dailyStats.forEach(stat => {
                 statsMap[stat.date] = {
                     absent: stat.absent || 0,
                     late: stat.late || 0,
-                    early_departure: stat.early_departure || 0
+                    early_departure: stat.early_departure || 0,
+                    pending_requests: 0 // 初期化
                 };
+            });
+
+            // 承認待ち申請数をマージ
+            pendingRequests.forEach(req => {
+                // 日付形式を合わせる (YYYY-MM-DD)
+                const dateStr = typeof req.date === 'string' ? req.date : req.date.toISOString().split('T')[0];
+
+                if (!statsMap[dateStr]) {
+                    statsMap[dateStr] = {
+                        absent: 0,
+                        late: 0,
+                        early_departure: 0,
+                        pending_requests: 0
+                    };
+                }
+                statsMap[dateStr].pending_requests = req.count;
             });
 
             return {

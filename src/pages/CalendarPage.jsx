@@ -294,8 +294,10 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
 
               // [追加] ツールチップ用タイトル
               const stats = day.date ? dailyStats[dateStr] : null;
+              const hasPendingRequests = stats && stats.pending_requests > 0;
+
               const tooltipText = stats
-                ? `欠席: ${stats.absent || 0}名, 遅刻: ${stats.late || 0}名, 早退: ${stats.early_departure || 0}名`
+                ? `欠席: ${stats.absent || 0}名, 遅刻: ${stats.late || 0}名, 早退: ${stats.early_departure || 0}名${hasPendingRequests ? `, 承認待ち: ${stats.pending_requests}件` : ''}`
                 : '';
 
               return (
@@ -306,7 +308,12 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
                   onClick={() => handleDateClick(day.date)}
                   title={tooltipText}
                 >
-                  <div className="day-number">{day.day}</div>
+                  <div className="day-number">
+                    {day.day}
+                    {hasPendingRequests && (user?.role === 'teacher' || user?.role === 'admin') && (
+                      <span className="pending-indicator">●</span>
+                    )}
+                  </div>
                   {isCurrentMonth && (
                     <div className="day-content">
                       {record && (
