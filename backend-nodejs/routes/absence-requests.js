@@ -45,9 +45,14 @@ router.use(authenticate);
  */
 router.post('/', upload.single('attachment'), async (req, res) => {
     try {
+        console.log('[Absence Request Debug] Request received');
+        console.log('[Absence Request Debug] User:', req.user);
+        console.log('[Absence Request Debug] Body:', req.body);
+        console.log('[Absence Request Debug] File:', req.file);
+
         // 学生IDの確認
         if (!req.user.student_id && req.user.role === 'student') {
-            // 学生ロールだがstudent_idがない場合はエラー
+            console.error('[Absence Request Error] Student ID missing for student user');
             return res.status(400).json({
                 success: false,
                 message: '学生情報が見つかりません。管理者に連絡してください。'
@@ -56,12 +61,30 @@ router.post('/', upload.single('attachment'), async (req, res) => {
 
         const requestData = {
             studentId: req.user.student_id,
-            requestType: req.body.type, // フロントエンドの 'type' を 'requestType' にマッピング
-            requestDate: req.body.date, // フロントエンドの 'date' を 'requestDate' にマッピング
+            requestType: req.body.type,
+            requestDate: req.body.date,
             reason: req.body.reason,
             classSessionId: req.body.classSessionId,
             attachmentUrl: req.file ? `/uploads/absence-attachments/${req.file.filename}` : null
         };
+
+        console.log('[Absence Request Debug] Processed Request Data:', requestData);
+
+        // 必須フィールドのチェック（サービス層に渡す前）
+        const missingFields = [];
+        if (!requestData.studentId) missingFields.push('studentId');
+        if (!requestData.requestType) missingFields.push('requestType (type)');
+        if (!requestData.requestDate) missingFields.push('requestDate (date)');
+        if (!requestData.reason) missingFields.push('reason');
+
+        if (missingFields.length > 0) {
+            console.error('[Absence Request Error] Missing fields:', missingFields);
+            return res.status(400).json({
+                success: false,
+                message: '必須フィールドが不足しています',
+                error: `不足しているフィールド: ${missingFields.join(', ')}`
+            });
+        }
 
         const request = await AbsenceRequestService.createRequest(requestData);
 
