@@ -88,12 +88,21 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
 
       // 3. [追加] 日次統計の処理
       if (statsResponse && statsResponse.success) {
+        console.log('[Calendar Debug] Daily stats loaded:', statsResponse.data);
         setDailyStats(statsResponse.data || {});
+      } else {
+        console.warn('[Calendar Debug] Stats response failed or empty:', statsResponse);
+        setDailyStats({});
       }
 
     } catch (err) {
-      console.error('カレンダーデータ読み込みエラー:', err);
-      setError('カレンダーデータの読み込みに失敗しました');
+      console.error('[Calendar Error] Calendar data loading failed:', err);
+      console.error('[Calendar Error] Error details:', {
+        message: err.message,
+        response: err.response,
+        stack: err.stack
+      });
+      setError('カレンダーデータの読み込みに失敗しました: ' + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -120,34 +129,66 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
 
   // [追加] 右クリックハンドラー (学生のみ、未来の日付)
   const handleContextMenu = (e, date) => {
+    console.log('[Calendar Debug] Context menu triggered:', {
+      role: user?.role,
+      date: date,
+      isStudent: user?.role === 'student',
+      isFutureDate: date && date >= new Date().setHours(0, 0, 0, 0)
+    });
+
     if (user?.role === 'student' && date && date >= new Date().setHours(0, 0, 0, 0)) {
       e.preventDefault();
+      console.log('[Calendar Debug] Opening absence request modal for date:', date);
       setSelectedDate(date);
       setShowAbsenceRequest(true);
+    } else {
+      console.log('[Calendar Debug] Context menu not triggered - conditions not met');
     }
   };
 
   // [追加] 日付クリックハンドラー (教員のみ)
   const handleDateClick = async (date) => {
+    console.log('[Calendar Debug] Date clicked:', {
+      role: user?.role,
+      date: date,
+      isTeacherOrAdmin: user?.role === 'teacher' || user?.role === 'admin'
+    });
+
     if ((user?.role === 'teacher' || user?.role === 'admin') && date) {
       try {
         const dateStr = formatDate(date, 'YYYY-MM-DD');
+        console.log('[Calendar Debug] Fetching absence details for:', dateStr);
+
         const response = await attendanceApi.getAbsenceDetails(dateStr);
+        console.log('[Calendar Debug] Absence details response:', response);
+
         if (response.success) {
           setAbsenceData(response.data);
           setSelectedDate(date);
           setShowAbsenceList(true);
+          console.log('[Calendar Debug] Opening absence list modal');
+        } else {
+          console.warn('[Calendar Debug] Failed to fetch absence details:', response.message);
         }
       } catch (err) {
-        console.error('欠席詳細取得エラー:', err);
+        console.error('[Calendar Error] Absence details fetch error:', err);
       }
+    } else {
+      console.log('[Calendar Debug] Click handler not triggered - not teacher/admin or no date');
     }
   };
 
   // [追加] 欠席申請送信
   const handleAbsenceSubmit = async (formData) => {
-    await attendanceApi.submitAbsenceRequest(formData);
-    loadCalendarData(); // カレンダーを再読込
+    try {
+      console.log('[Calendar Debug] Submitting absence request:', formData);
+      const response = await attendanceApi.submitAbsenceRequest(formData);
+      console.log('[Calendar Debug] Absence request response:', response);
+      loadCalendarData(); // カレンダーを再読込
+    } catch (err) {
+      console.error('[Calendar Error] Absence request submission failed:', err);
+      throw err;
+    }
   };
 
   const calendarDays = useMemo(() => {
@@ -348,7 +389,7 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
           absenceData={absenceData}
         />
       </div>
-    </div>
+    </div >
   );
 });
 

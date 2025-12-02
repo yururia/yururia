@@ -72,9 +72,9 @@ const PublicRoute = ({ children }) => {
     return <PageLoader />;
   }
 
-  // 認証済みの場合はダッシュボードにリダイレクト
+  // 認証済みの場合はカレンダーにリダイレクト
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/calendar" replace />;
   }
 
   return children;
@@ -90,9 +90,9 @@ const GuestRoute = ({ children }) => {
     return <PageLoader />;
   }
 
-  // 認証済みの場合はダッシュボードにリダイレクト
+  // 認証済みの場合はカレンダーにリダイレクト
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/calendar" replace />;
   }
 
   return children;
@@ -106,10 +106,10 @@ const NotFoundPage = () => {
       <h1>404 - ページが見つかりません</h1>
       <p>お探しのページは存在しません。</p>
       <button
-        onClick={() => navigate('/dashboard')}
+        onClick={() => navigate('/calendar')}
         className="btn btn--primary"
       >
-        ダッシュボードに戻る
+        カレンダーに戻る
       </button>
     </div>
   );
