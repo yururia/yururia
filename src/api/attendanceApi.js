@@ -309,10 +309,6 @@ export const attendanceApi = {
         formData.append(key, requestData[key]);
       }
     });
-    return apiClient.post('/absence-requests', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    return apiClient.post('/absence-requests', formData);
   },
 };
