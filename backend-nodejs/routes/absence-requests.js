@@ -55,8 +55,11 @@ router.post('/', upload.single('attachment'), async (req, res) => {
         }
 
         const requestData = {
-            ...req.body,
-            studentId: req.user.student_id, // 認証ユーザーから学生IDを取得
+            studentId: req.user.student_id,
+            requestType: req.body.type, // フロントエンドの 'type' を 'requestType' にマッピング
+            requestDate: req.body.date, // フロントエンドの 'date' を 'requestDate' にマッピング
+            reason: req.body.reason,
+            classSessionId: req.body.classSessionId,
             attachmentUrl: req.file ? `/uploads/absence-attachments/${req.file.filename}` : null
         };
 
