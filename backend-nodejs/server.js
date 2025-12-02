@@ -29,6 +29,7 @@ const securityRoutes = require('./routes/security');
 const absenceRequestRoutes = require('./routes/absence-requests');
 const approvalRoutes = require('./routes/approvals');
 const timetableRoutes = require('./routes/timetables');
+const attendanceStatsRoutes = require('./routes/attendance-stats');
 
 
 // Swaggerのセットアップ
@@ -64,6 +65,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 // --- ルーティング ---
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/attendance', attendanceStatsRoutes); // 統計エンドポイント
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/student-attendance', studentAttendanceRoutes);
