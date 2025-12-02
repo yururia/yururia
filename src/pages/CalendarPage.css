@@ -266,50 +266,50 @@
   .calendar-page {
     padding: 1rem 0.5rem;
   }
-  
+
   .calendar-title {
     font-size: 1.5rem;
   }
-  
+
   .calendar-navigation {
     gap: 1rem;
   }
-  
+
   .current-month {
     font-size: 1.25rem;
     min-width: 150px;
   }
-  
+
   .nav-button {
     padding: 0.375rem 0.75rem;
     font-size: 0.875rem;
   }
-  
+
   .calendar-day {
     min-height: 60px;
     padding: 0.5rem;
   }
-  
+
   .day-number {
     font-size: 0.875rem;
   }
-  
+
   .status-text {
     font-size: 0.625rem;
   }
-  
+
   .time-item {
     font-size: 0.5rem;
   }
-  
+
   .calendar-legend {
     gap: 1rem;
   }
-  
+
   .legend-item {
     font-size: 0.75rem;
   }
-  
+
   .legend-color {
     width: 0.75rem;
     height: 0.75rem;
@@ -321,37 +321,235 @@
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .current-month {
     order: -1;
   }
-  
+
   .calendar-days {
     min-height: 400px;
   }
-  
+
   .calendar-day {
     min-height: 50px;
     padding: 0.25rem;
   }
-  
+
   .day-number {
     font-size: 0.75rem;
   }
-  
+
   .status-text {
     font-size: 0.5rem;
   }
-  
+
+  padding: 0.75rem;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.calendar-day:nth-child(7n) {
+  border-right: none;
+}
+
+.calendar-day:hover {
+  background-color: #f9fafb;
+}
+
+.calendar-day--today {
+  background-color: #dbeafe;
+  border: 2px solid #3b82f6;
+}
+
+.calendar-day--present {
+  background-color: #d1fae5;
+}
+
+.calendar-day--absent {
+  background-color: #fee2e2;
+}
+
+.calendar-day--late {
+  background-color: #fef3c7;
+}
+
+.day-number {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.day-status {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.status-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.time-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.time-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.625rem;
+}
+
+.time-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.time-value {
+  color: #374151;
+  font-weight: 600;
+}
+
+.calendar-legend {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.legend-color {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d1d5db;
+}
+
+.legend-color--present {
+  background-color: #d1fae5;
+}
+
+.legend-color--absent {
+  background-color: #fee2e2;
+}
+
+.legend-color--late {
+  background-color: #fef3c7;
+}
+
+.legend-color--today {
+  background-color: #dbeafe;
+  border-color: #3b82f6;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+  .calendar-page {
+    padding: 1rem 0.5rem;
+  }
+
+  .calendar-title {
+    font-size: 1.5rem;
+  }
+
+  .calendar-navigation {
+    gap: 1rem;
+  }
+
+  .current-month {
+    font-size: 1.25rem;
+    min-width: 150px;
+  }
+
+  .nav-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .calendar-day {
+    min-height: 60px;
+    padding: 0.5rem;
+  }
+
+  .day-number {
+    font-size: 0.875rem;
+  }
+
+  .status-text {
+    font-size: 0.625rem;
+  }
+
+  .time-item {
+    font-size: 0.5rem;
+  }
+
+  .calendar-legend {
+    gap: 1rem;
+  }
+
+  .legend-item {
+    font-size: 0.75rem;
+  }
+
+  .legend-color {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-navigation {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .current-month {
+    order: -1;
+  }
+
+  .calendar-days {
+    min-height: 400px;
+  }
+
+  .calendar-day {
+    min-height: 50px;
+    padding: 0.25rem;
+  }
+
+  .day-number {
+    font-size: 0.75rem;
+  }
+
+  .status-text {
+    font-size: 0.5rem;
+  }
+
   .time-info {
     display: none;
   }
 }
+
 /* --- 以下のコードを CalendarPage.css の末尾に追記 --- */
 
 /* イベントがある日のスタイル */
 .calendar-day.has-event {
-  background-color: #eef2ff; /* Indigo 50 */
+  background-color: #eef2ff;
+  /* Indigo 50 */
 }
 
 /* イベント情報 */
@@ -360,7 +558,8 @@
 }
 
 .event-item {
-  background-color: #4f46e5; /* Indigo 600 */
+  background-color: #4f46e5;
+  /* Indigo 600 */
   color: white;
   font-size: 12px;
   padding: 2px 6px;
@@ -377,33 +576,14 @@
   background-color: #4f46e5;
   border: 1px solid #4f46e5;
 }
-/* --- 以下のコードを CalendarPage.css の末尾に追記 --- */
 
-/* イベントがある日のスタイル */
-.calendar-day.has-event {
-  background-color: #eef2ff; /* Indigo 50 */
-}
-
-/* イベント情報 */
-.event-info {
-  margin-top: 8px;
-}
-
-.event-item {
-  background-color: #4f46e5; /* Indigo 600 */
-  color: white;
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-top: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: default;
-}
-
-/* 凡例 */
-.legend-color--event {
-  background-color: #4f46e5;
-  border: 1px solid #4f46e5;
+/* 承認待ちインジケータ */
+.pending-indicator {
+  color: #ef4444;
+  /* Red 500 */
+  font-size: 14px;
+  line-height: 1;
+  margin-left: 4px;
+  vertical-align: top;
+  display: inline-block;
 }
