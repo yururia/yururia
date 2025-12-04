@@ -130,24 +130,26 @@ router.post('/register', [
     .isLength({ min: 6 })
     .withMessage('パスワードは6文字以上で入力してください'),
   body('role')
-    .optional()
-    .isIn(['employee', 'student'])
-    .withMessage('役割はemployeeまたはstudentである必要があります'),
-  body('employeeId')
-    .optional({ checkFalsy: true }) // 空文字列もスキップ
+    .isIn(['owner', 'student'])
+    .withMessage('役割は管理者(owner)または生徒(student)である必要があります'),
+  body('organizationName')
+    .if(body('role').equals('owner'))
+    .notEmpty()
+    .withMessage('組織名は必須です')
     .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('社員IDは1文字以上50文字以下で入力してください'),
+    .isLength({ max: 100 })
+    .withMessage('組織名は100文字以下で入力してください'),
+  body('joinCode')
+    .if(body('role').equals('student'))
+    .notEmpty()
+    .withMessage('参加コードは必須です')
+    .trim(),
   body('studentId')
     .optional({ checkFalsy: true }) // 空文字列もスキップ
     .trim()
     .isLength({ min: 1, max: 255 })
     .withMessage('学生IDは1文字以上255文字以下で入力してください'),
-  body('department')
-    .optional({ checkFalsy: true }) // 空文字列もスキップ
-    .trim()
-    .isLength({ max: 100 })
-    .withMessage('部署名は100文字以下で入力してください')
+  // departmentは削除（組織情報に統合されたため）
 ], async (req, res) => {
   try {
     // バリデーションエラーのチェック

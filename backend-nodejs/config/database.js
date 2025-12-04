@@ -72,6 +72,7 @@ const query = async (sql, params = [], connection = null) => {
 
 /**
  * トランザクション実行
+ * コールバック形式と手動制御の両方をサポート
  */
 const transaction = async (callback) => {
   const connection = await pool.getConnection();
@@ -83,6 +84,29 @@ const transaction = async (callback) => {
   } catch (error) {
     await connection.rollback();
     throw error;
+  } finally {
+    connection.release();
+  }
+};
+
+// 手動制御用メソッドを追加
+transaction.begin = async () => {
+  const connection = await pool.getConnection();
+  await connection.beginTransaction();
+  return connection;
+};
+
+transaction.commit = async (connection) => {
+  try {
+    await connection.commit();
+  } finally {
+    connection.release();
+  }
+};
+
+transaction.rollback = async (connection) => {
+  try {
+    await connection.rollback();
   } finally {
     connection.release();
   }
