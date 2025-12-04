@@ -231,3 +231,14 @@ coverage/
 # package-lock.json  # Uncomment if using npm
 # yarn.lock          # Uncomment if using yarn
 # pnpm-lock.yaml     # Uncomment if using pnpm
+
+# Debug and test outputs
+debug-*.txt
+debug-*.log
+result_*.txt
+test_output*.txt
+test_results*.txt
+*.log
+
+# Large review files
+attendance_app_review.json

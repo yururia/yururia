@@ -1,3 +1,5 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+
 // テストのタイムアウト設定（必要に応じて）
 jest.setTimeout(10000);
 

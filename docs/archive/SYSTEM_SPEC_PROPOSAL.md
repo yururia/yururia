@@ -1,13 +1,17 @@
 # システム仕様拡張案
 
+> [!NOTE]
+> このドキュメントは2024年11月に作成された提案書です。現在のバックエンド実装は **Node.js (Express)** です。
+
 ## 📊 現状の実装状況
 
 ### ✅ 既に実装済み
 
 1. **認証システム**
-   - ログイン・登録機能
+   - ログイン・登録機能 (SaaS型: 管理者/生徒)
    - JWT認証
-   - ユーザー権限管理（admin/一般ユーザー）
+   - ユーザー権限管理（owner/admin/teacher/student）
+   - マルチテナント対応（組織別分離）
    
 2. **ページ構成**
    - `/login` - ログインページ
@@ -24,6 +28,11 @@
    - QRコードスキャン
    - グループ管理
    - レポート生成
+
+4. **バックエンド技術スタック**
+   - Node.js + Express
+   - MySQL (mysql2)
+   - JWT認証
 
 ---
 
@@ -81,13 +90,13 @@ const GuestRoute = ({ children }) => {
 - カレンダーAPI連携
 ```
 
-**必要なAPI:**
-```php
-// backend-php/api/events.php（新規作成）
-- POST /events.php - イベント作成
-- GET /events.php - イベント一覧取得
-- PUT /events.php?id={id} - イベント更新
-- DELETE /events.php?id={id} - イベント削除
+**必要なAPI (Node.js/Express):**
+```javascript
+// backend-nodejs/routes/events.js
+- POST /api/events - イベント作成
+- GET /api/events - イベント一覧取得
+- PUT /api/events/:id - イベント更新
+- DELETE /api/events/:id - イベント削除
 ```
 
 **データベース:**
@@ -118,6 +127,10 @@ CREATE TABLE event_participants (
 
 ### 3. チャット機能 💬
 
+> [!WARNING]
+> **ステータス: 将来のロードマップ**
+> チャット機能は現在未実装です。実装する場合はSocket.IOを使用したリアルタイム通信が必要となり、開発工数が大きくなります。
+
 **要件:**
 - Slackクローン機能
 - ワークスペース管理
@@ -145,7 +158,7 @@ src/
 
 #### バックエンド構造
 ```
-backend-nodejs/（既存のNode.jsバックエンドを拡張）
+backend-nodejs/
 ├── routes/
 │   └── chat.js               # チャット用API
 ├── services/
@@ -214,7 +227,7 @@ CREATE TABLE workspace_members (
 3. ✅ ダッシュボードの権限別表示改善
 
 ### Phase 2: チャット機能（2-3週間）
-4. ⚠️ チャット機能の実装
+4. 🔮 チャット機能の実装 **[将来のロードマップ]**
    - ワークスペース管理
    - 基本的なメッセージ送受信
    
@@ -238,8 +251,8 @@ CREATE TABLE workspace_members (
 ### 2. 権限別ダッシュボード表示
 
 **現在のダッシュボードを機能別に分割:**
-- 一般ユーザー: 自分の出欠状況、申請フォーム、イベント、チャット
-- 管理者: クラス管理、生徒一覧、出欠確認、イベント、チャット
+- 一般ユーザー: 自分の出欠状況、申請フォーム、イベント
+- 管理者: クラス管理、生徒一覧、出欠確認、イベント
 
 ---
 
@@ -267,4 +280,3 @@ CREATE TABLE workspace_members (
 3. **現状維持** - エラー修正と安定化を優先
 
 ご希望をお聞かせください！
-

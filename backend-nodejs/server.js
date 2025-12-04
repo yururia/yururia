@@ -162,7 +162,12 @@ try {
     }
   };
 
-  startServer();
+  // テスト環境でない場合のみサーバーを起動
+  if (process.env.NODE_ENV !== 'test') {
+    startServer();
+  }
+
+  module.exports = app;
 
 } catch (err) {
   errorLog('初期化中に致命的なエラーが発生しました', err);

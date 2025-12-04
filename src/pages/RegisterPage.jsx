@@ -16,10 +16,9 @@ const RegisterPage = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'student',
-    employeeId: '',
-    studentId: '',
-    department: '',
+    role: 'student', // デフォルトは生徒
+    organizationName: '', // 管理者用
+    joinCode: '', // 生徒用
   });
   const [validationErrors, setValidationErrors] = useState({});
 
@@ -42,11 +41,13 @@ const RegisterPage = () => {
         [name]: null,
       }));
     }
+
+    // ロール変更時にバリデーションエラーをクリア
     if (name === 'role') {
       setValidationErrors(prev => ({
         ...prev,
-        studentId: null,
-        employeeId: null,
+        organizationName: null,
+        joinCode: null,
       }));
     }
   };
@@ -56,10 +57,10 @@ const RegisterPage = () => {
     if (!formData.name) errors.name = '氏名は必須です';
     if (!formData.email) errors.email = 'メールアドレスは必須です';
 
-    if (formData.role === 'student') {
-      if (!formData.studentId) errors.studentId = '学生IDは必須です';
-    } else if (formData.role === 'employee') {
-      if (!formData.employeeId) errors.employeeId = '社員IDは必須です';
+    if (formData.role === 'owner') {
+      if (!formData.organizationName) errors.organizationName = '組織名は必須です';
+    } else if (formData.role === 'student') {
+      if (!formData.joinCode) errors.joinCode = '参加コードは必須です';
     }
 
     if (formData.password.length < 6) errors.password = 'パスワードは6文字以上で入力してください';
@@ -78,13 +79,19 @@ const RegisterPage = () => {
     }
 
     setIsLoading(true);
-    const { confirmPassword, ...dataToSend } = formData;
 
-    if (dataToSend.role === 'student') {
-      dataToSend.employeeId = null;
-      dataToSend.department = null;
+    // 送信データの構築
+    const dataToSend = {
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      role: formData.role,
+    };
+
+    if (formData.role === 'owner') {
+      dataToSend.organizationName = formData.organizationName;
     } else {
-      dataToSend.studentId = null;
+      dataToSend.joinCode = formData.joinCode;
     }
 
     const result = await register(dataToSend);
@@ -117,17 +124,17 @@ const RegisterPage = () => {
                   checked={formData.role === 'student'}
                   onChange={handleInputChange}
                 />
-                <span className="radio-label">学生</span>
+                <span className="radio-label">生徒 (参加)</span>
               </label>
               <label>
                 <input
                   type="radio"
                   name="role"
-                  value="employee"
-                  checked={formData.role === 'employee'}
+                  value="owner"
+                  checked={formData.role === 'owner'}
                   onChange={handleInputChange}
                 />
-                <span className="radio-label">教員・管理者</span>
+                <span className="radio-label">管理者 (組織作成)</span>
               </label>
             </div>
 
@@ -155,44 +162,32 @@ const RegisterPage = () => {
               autoComplete="email"
             />
 
-            {formData.role === 'student' && (
+            {formData.role === 'owner' && (
               <Input
-                label="学生ID"
+                label="組織名 (学校名など)"
                 type="text"
-                name="studentId"
-                value={formData.studentId}
+                name="organizationName"
+                value={formData.organizationName}
                 onChange={handleInputChange}
-                error={validationErrors.studentId}
+                error={validationErrors.organizationName}
                 required
-                placeholder="学生IDを入力"
-                autoComplete="off"
+                placeholder="例: ○○大学 情報学部"
+                autoComplete="organization"
               />
             )}
 
-            {formData.role === 'employee' && (
-              <>
-                <Input
-                  label="社員ID"
-                  type="text"
-                  name="employeeId"
-                  value={formData.employeeId}
-                  onChange={handleInputChange}
-                  error={validationErrors.employeeId}
-                  required
-                  placeholder="社員IDを入力"
-                  autoComplete="off"
-                />
-                <Input
-                  label="部署 (任意)"
-                  type="text"
-                  name="department"
-                  value={formData.department}
-                  onChange={handleInputChange}
-                  error={validationErrors.department}
-                  placeholder="例: 情報学部"
-                  autoComplete="organization"
-                />
-              </>
+            {formData.role === 'student' && (
+              <Input
+                label="参加コード"
+                type="text"
+                name="joinCode"
+                value={formData.joinCode}
+                onChange={handleInputChange}
+                error={validationErrors.joinCode}
+                required
+                placeholder="学校/組織から配布されたコードを入力"
+                autoComplete="off"
+              />
             )}
 
             <div className="form-row">
