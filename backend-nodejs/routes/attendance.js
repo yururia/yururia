@@ -43,7 +43,7 @@ router.post('/', authenticate, [
     }
 
     const { date, type, timestamp, reason, studentId } = req.body;
-    
+
     const result = await AttendanceService.recordAttendance(
       req.user.id,
       date,
@@ -96,7 +96,10 @@ router.get('/', authenticate, [
     }
 
     const { userId, startDate, endDate } = req.query;
-    const targetUserId = userId || req.user.id;
+    let targetUserId = userId;
+    if (!targetUserId || targetUserId === 'undefined' || targetUserId === 'null') {
+      targetUserId = req.user.id;
+    }
 
     // 自分の記録のみ取得可能（管理者は全員の記録を取得可能）
     if (targetUserId != req.user.id && req.user.role !== 'admin') {
@@ -149,7 +152,12 @@ router.get('/report', authenticate, [
     }
 
     const { year, month, userId } = req.query;
-    const targetUserId = userId || req.user.id;
+    let targetUserId = userId;
+    if (!targetUserId || targetUserId === 'undefined' || targetUserId === 'null') {
+      targetUserId = req.user.id;
+    }
+
+    console.log('[Debug] getMonthlyReport:', { targetUserId, reqUserId: req.user.id, role: req.user.role });
 
     // 自分の記録のみ取得可能（管理者は全員の記録を取得可能）
     if (targetUserId != req.user.id && req.user.role !== 'admin') {

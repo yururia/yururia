@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import './AbsenceRequestModal.css';
 
 /**
@@ -41,9 +42,32 @@ const AbsenceRequestModal = ({ isOpen, onClose, defaultDate, onSubmit }) => {
         }
     };
 
+    // ポータル用のコンテナを作成
+    const [portalContainer] = useState(() => {
+        const div = document.createElement('div');
+        div.id = `absence-request-modal-portal-${Date.now()}`; // デバッグ用ID
+        console.log('[AbsenceRequestModal] Created portal container:', div.id);
+        return div;
+    });
+
+    React.useEffect(() => {
+        console.log('[AbsenceRequestModal] Mounting portal container:', portalContainer.id);
+        document.body.appendChild(portalContainer);
+        return () => {
+            console.log('[AbsenceRequestModal] Unmounting portal container:', portalContainer.id);
+            if (document.body.contains(portalContainer)) {
+                document.body.removeChild(portalContainer);
+            } else {
+                console.warn('[AbsenceRequestModal] Portal container not found in body during cleanup:', portalContainer.id);
+            }
+        };
+    }, [portalContainer]);
+
+    console.log('[AbsenceRequestModal] Render. isOpen:', isOpen);
+
     if (!isOpen) return null;
 
-    return (
+    return ReactDOM.createPortal(
         <div className="absence-modal-overlay" onClick={onClose}>
             <div className="absence-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="absence-modal-header">
@@ -116,7 +140,8 @@ const AbsenceRequestModal = ({ isOpen, onClose, defaultDate, onSubmit }) => {
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        portalContainer
     );
 };
 

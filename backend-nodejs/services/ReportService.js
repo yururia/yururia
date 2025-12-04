@@ -1,7 +1,7 @@
 const { query } = require('../config/database');
 const logger = require('../utils/logger');
-const AttendanceService = require('./AttendanceService'); 
-const StudentAttendanceService = require('./StudentAttendanceService'); 
+const AttendanceService = require('./AttendanceService');
+const StudentAttendanceService = require('./StudentAttendanceService');
 
 /**
  * [完全版] レポートサービス
@@ -16,8 +16,8 @@ class ReportService {
         type,
         start_date,
         end_date,
-        user_id, 
-        student_id, 
+        user_id,
+        student_id,
         class_id
       } = options;
 
@@ -66,8 +66,7 @@ class ReportService {
             uar.check_in_time,
             uar.check_out_time,
             uar.reason,
-            u.name as user_name,
-            u.employee_id
+            u.name as user_name
           FROM user_attendance_records uar
           JOIN users u ON uar.user_id = u.id
           WHERE uar.date >= ? AND uar.date <= ?
@@ -116,9 +115,9 @@ class ReportService {
       if (student_id || class_id) {
         // 学生統計
         result = await StudentAttendanceService.getAttendanceStats({
-           student_id, 
-           class_id, 
-           period 
+          student_id,
+          class_id,
+          period
         });
       } else {
         // 従業員統計
@@ -157,7 +156,7 @@ class ReportService {
 
         const headers = Object.keys(records[0]);
         let csvContent = headers.join(',') + '\n';
-        
+
         for (const record of records) {
           const row = headers.map(header => {
             let value = record[header];
@@ -181,9 +180,8 @@ class ReportService {
         success: false,
         message: `${format}形式のエクスポートは現在サポートされていません`
       };
-      
-    } catch (error)
- {
+
+    } catch (error) {
       logger.error('レポートエクスポートエラー:', error.message);
       return {
         success: false,
@@ -198,14 +196,14 @@ class ReportService {
   static async getDashboardSummary(userId, period = 'month') {
     try {
       const result = await AttendanceService.getAttendanceStats(userId, period);
-      
+
       if (result.success) {
-         return {
-           success: true,
-           data: { summary: result.data }
-         };
+        return {
+          success: true,
+          data: { summary: result.data }
+        };
       } else {
-         return result;
+        return result;
       }
 
     } catch (error) {

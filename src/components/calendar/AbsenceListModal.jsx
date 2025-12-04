@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import './AbsenceListModal.css';
 
@@ -31,7 +32,32 @@ const AbsenceListModal = ({ isOpen, onClose, date, absenceData }) => {
 
     const activeTabData = tabs.find(t => t.key === activeTab);
 
-    return (
+    // ポータル用のコンテナを作成
+    const [portalContainer] = useState(() => {
+        const div = document.createElement('div');
+        div.id = `absence-list-modal-portal-${Date.now()}`; // デバッグ用ID
+        console.log('[AbsenceListModal] Created portal container:', div.id);
+        return div;
+    });
+
+    React.useEffect(() => {
+        console.log('[AbsenceListModal] Mounting portal container:', portalContainer.id);
+        document.body.appendChild(portalContainer);
+        return () => {
+            console.log('[AbsenceListModal] Unmounting portal container:', portalContainer.id);
+            if (document.body.contains(portalContainer)) {
+                document.body.removeChild(portalContainer);
+            } else {
+                console.warn('[AbsenceListModal] Portal container not found in body during cleanup:', portalContainer.id);
+            }
+        };
+    }, [portalContainer]);
+
+    console.log('[AbsenceListModal] Render. isOpen:', isOpen, 'absenceData:', absenceData ? 'present' : 'null');
+
+    if (!isOpen || !absenceData) return null;
+
+    return ReactDOM.createPortal(
         <div className="absence-list-overlay" onClick={onClose}>
             <div className="absence-list-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="absence-list-header">
@@ -90,7 +116,8 @@ const AbsenceListModal = ({ isOpen, onClose, date, absenceData }) => {
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        portalContainer
     );
 };
 

@@ -2,6 +2,7 @@
   "name": "attendance-app",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:3001",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -20,6 +21,8 @@
   "scripts": {
     "start": "react-scripts start",
     "start:powershell": "$env:BROWSER='chrome'; react-scripts start",
+    "start:https": "set HTTPS=true&&react-scripts start",
+    "start:https:ps": "$env:HTTPS='true'; react-scripts start",
     "start:no-browser": "react-scripts start --no-browser",
     "build": "react-scripts build",
     "test": "react-scripts test",

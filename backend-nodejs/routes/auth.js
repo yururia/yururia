@@ -95,11 +95,12 @@ router.post('/login', [
 
       // レスポンスボディからトークンを除外（または必要に応じて残す）
       // ここではセキュリティのため除外しますが、互換性のため残すことも検討
-      const { token, ...userData } = result.data;
+      // レスポンスボディからトークンを除外せず、含めるように変更
+      // const { token, ...userData } = result.data;
       res.json({
         success: true,
         message: 'ログインしました',
-        data: userData
+        data: result.data
       });
     } else {
       res.status(401).json(result);

@@ -24,6 +24,7 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
 
   const loadCalendarData = useCallback(async () => {
     try {
+      console.log('[CalendarPage] loadCalendarData started. User:', user?.id);
       if (!isAuthenticated || !user?.id) {
         setIsLoading(false);
         return;
@@ -109,6 +110,7 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
   }, [currentDate, isAuthenticated, user]);
 
   useEffect(() => {
+    console.log('[CalendarPage] Effect triggered. Auth:', isAuthenticated, 'User:', user?.id);
     if (isAuthenticated && user?.id) {
       loadCalendarData();
     }

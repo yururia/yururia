@@ -9,11 +9,19 @@ class UserService {
   /**
    * 全ユーザー一覧の取得
    */
-  static async getAllUsers() {
+  static async getAllUsers(organizationId) {
     try {
-      const users = await query(
-        'SELECT id, name, email, employee_id, department, role, created_at FROM users ORDER BY created_at DESC'
-      );
+      let sql = 'SELECT id, name, email, student_id, organization_id, role, created_at FROM users';
+      const params = [];
+
+      if (organizationId) {
+        sql += ' WHERE organization_id = ?';
+        params.push(organizationId);
+      }
+
+      sql += ' ORDER BY created_at DESC';
+
+      const users = await query(sql, params);
 
       return {
         success: true,
@@ -33,9 +41,8 @@ class UserService {
    */
   static async getUser(userId) {
     try {
-      // [修正] student_id と last_role_update も取得
       const users = await query(
-        'SELECT id, name, email, employee_id, student_id, department, role, created_at, last_role_update FROM users WHERE id = ?',
+        'SELECT id, name, email, student_id, organization_id, role, created_at, last_role_update FROM users WHERE id = ?',
         [userId]
       );
 
@@ -65,7 +72,7 @@ class UserService {
   static async updateUser(userId, updateData) {
     try {
       const result = await transaction(async (conn) => {
-        const allowedFields = ['name', 'email', 'department', 'phone'];
+        const allowedFields = ['name', 'email', 'phone'];
         const updateFields = [];
         const updateValues = [];
 
@@ -152,7 +159,7 @@ class UserService {
   }
 
   /**
-   * [完全版] ロール変更ステータスの取得
+   * ロール変更ステータスの取得
    */
   static async getRoleUpdateStatus(userId) {
     try {
@@ -192,7 +199,7 @@ class UserService {
   }
 
   /**
-   * [完全版] ロールの更新
+   * ロールの更新
    */
   static async updateRole(userId, newRole, password) {
     try {
@@ -210,7 +217,7 @@ class UserService {
         return { success: false, message: 'ロール変更は90日に1回のみ可能です' };
       }
 
-      if (newRole !== 'student' && newRole !== 'employee' && newRole !== 'admin') {
+      if (newRole !== 'student' && newRole !== 'teacher' && newRole !== 'owner') {
         return { success: false, message: '無効な役割です' };
       }
 
@@ -222,12 +229,7 @@ class UserService {
           [newRole, today, userId]
         );
 
-        if (newRole === 'student') {
-          await conn.execute(
-            'UPDATE users SET employee_id = NULL, department = NULL WHERE id = ?',
-            [userId]
-          );
-        } else {
+        if (newRole !== 'student') {
           await conn.execute(
             'UPDATE users SET student_id = NULL WHERE id = ?',
             [userId]

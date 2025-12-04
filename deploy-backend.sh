@@ -1,46 +1,62 @@
 #!/bin/bash
-# バックエンド配置スクリプト
+# バックエンド配置スクリプト (Node.js用)
 
 echo "=== バックエンド配置を開始します ==="
 
+# 設定
+APP_DIR="/var/www/html/attendance-backend"
+API_LINK="/var/www/html/api"
+
 # 1. ディレクトリの作成
 echo "ディレクトリを作成中..."
-sudo mkdir -p /var/www/html/backend-php
+sudo mkdir -p $APP_DIR
 
-# 2. APIシンボリックリンクの作成
-echo "APIシンボリックリンクを作成中..."
-sudo rm -rf /var/www/html/api
-sudo ln -s /var/www/html/backend-php/api /var/www/html/api
+# 2. 権限の設定 (現在のユーザーに一時的に権限を付与)
+echo "権限を設定中..."
+sudo chown -R $USER:$USER $APP_DIR
 
-# 3. 権限の設定
-echo "ファイル権限を設定中..."
-sudo chown -R www-data:www-data /var/www/html/backend-php
-sudo chown -h www-data:www-data /var/www/html/api
-sudo chmod -R 755 /var/www/html/backend-php
+# 3. ファイルのコピー (手動アップロード前提の場合はスキップ、またはここで行う)
+# ここでは、カレントディレクトリの内容をデプロイ先にコピーすると仮定
+# echo "ファイルをコピー中..."
+# cp -r ./* $APP_DIR/
 
-# 4. Apacheモジュールの有効化
-echo "Apacheモジュールを有効化中..."
-sudo a2enmod rewrite
-sudo a2enmod headers
+# 4. 依存関係のインストール
+echo "依存関係をインストール中..."
+cd $APP_DIR
+npm install --production
 
-# 5. Apacheの再起動
-echo "Apacheを再起動中..."
-sudo systemctl restart apache2
+# 5. 環境変数の確認
+if [ ! -f .env ]; then
+    echo "警告: .envファイルが見つかりません。.env.exampleをコピーして設定してください。"
+    cp .env.example .env
+fi
 
-# 6. 確認
+# 6. PM2によるプロセス管理
+echo "PM2でプロセスを再起動中..."
+# PM2がインストールされているか確認
+if command -v pm2 &> /dev/null; then
+    pm2 describe attendance-backend > /dev/null
+    if [ $? -eq 0 ]; then
+        pm2 reload attendance-backend
+    else
+        pm2 start server.js --name "attendance-backend"
+        pm2 save
+    fi
+else
+    echo "エラー: PM2がインストールされていません。'npm install -g pm2' を実行してください。"
+fi
+
+# 7. シンボリックリンクの作成 (必要であれば)
+# フロントエンドからのアクセスパスを維持するため
+# 注意: Node.jsは通常ポート(3001)で動作するため、Apache/Nginxのリバースプロキシ設定が別途必要です。
+# このスクリプトではリバースプロキシの設定は行いません。
+
 echo ""
 echo "=== 配置完了 ==="
 echo ""
-echo "ディレクトリ構造:"
-ls -la /var/www/html/ | grep -E "api|backend-php"
-echo ""
-echo "シンボリックリンクの確認:"
-ls -l /var/www/html/api
-echo ""
-echo "Apacheステータス:"
-sudo systemctl status apache2 --no-pager -l
-echo ""
 echo "次のステップ:"
-echo "1. backend-php フォルダを /var/www/html/backend-php/ にアップロード"
-echo "2. ブラウザで http://192.168.12.200/api/auth.php にアクセスして確認"
-
+echo "1. .envファイルを編集してデータベース接続情報などを設定してください。"
+echo "2. Apache/Nginxの設定で、/api へのリクエストを http://localhost:3001 にプロキシするように設定してください。"
+echo "   例 (Apache):"
+echo "   ProxyPass /api http://localhost:3001/api"
+echo "   ProxyPassReverse /api http://localhost:3001/api"

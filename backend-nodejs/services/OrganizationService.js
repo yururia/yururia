@@ -165,28 +165,27 @@ class OrganizationService {
             // グループ数を取得
             const groupCountSql = `
         SELECT COUNT(*) as count
-        FROM groups
-        WHERE organization_id = ? AND is_active = TRUE
+        FROM \`groups\`
+        WHERE is_active = TRUE
       `;
-            const groupCount = await query(groupCountSql, [orgId]);
+            const groupCount = await query(groupCountSql);
 
             // 学生数を取得（グループメンバー経由）
             const studentCountSql = `
         SELECT COUNT(DISTINCT gm.student_id) as count
         FROM group_members gm
-        JOIN groups g ON gm.group_id = g.id
-        WHERE g.organization_id = ? AND gm.status = 'active'
+        JOIN \`groups\` g ON gm.group_id = g.id
+        WHERE gm.status = 'active'
       `;
-            const studentCount = await query(studentCountSql, [orgId]);
+            const studentCount = await query(studentCountSql);
 
             // 教員数を取得（グループ担当教員経由）
             const teacherCountSql = `
         SELECT COUNT(DISTINCT gt.user_id) as count
         FROM group_teachers gt
-        JOIN groups g ON gt.group_id = g.id
-        WHERE g.organization_id = ?
+        JOIN \`groups\` g ON gt.group_id = g.id
       `;
-            const teacherCount = await query(teacherCountSql, [orgId]);
+            const teacherCount = await query(teacherCountSql);
 
             return {
                 totalGroups: groupCount[0].count,

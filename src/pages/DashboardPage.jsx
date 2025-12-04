@@ -5,6 +5,7 @@ import Button from '../components/common/Button';
 import CalendarPage from './CalendarPage';
 import AdminDashboardView from '../components/AdminDashboardView';
 import TeacherDashboardView from '../components/TeacherDashboardView';
+import QRManagement from '../components/admin/QRManagement';
 import './DashboardPage.css';
 
 /**
@@ -53,7 +54,9 @@ const EmployeeDashboard = ({ user }) => {
     annualStats: null,
   });
   const [isLoading, setIsLoading] = useState(true);
+
   const [error, setError] = useState(null);
+  const [showQRManagement, setShowQRManagement] = useState(false);
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -322,10 +325,48 @@ const EmployeeDashboard = ({ user }) => {
               >
                 レポート表示
               </Button>
+              <Button
+                variant="primary"
+                onClick={() => setShowQRManagement(true)}
+                className="action-button"
+              >
+                📱 QRコード生成
+              </Button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* QR管理モーダル */}
+      {showQRManagement && (
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div className="modal-content" style={{
+            background: 'white',
+            padding: '25px',
+            borderRadius: '8px',
+            width: '90%',
+            maxWidth: '800px',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+              <button onClick={() => setShowQRManagement(false)} className="btn btn--sm btn--secondary">閉じる</button>
+            </div>
+            <QRManagement />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

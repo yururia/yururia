@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { organizationApi, groupApi } from '../api';
+import QRManagement from './admin/QRManagement';
 import './AdminDashboardView.css';
 
 /**
@@ -10,6 +11,7 @@ const AdminDashboardView = () => {
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showQRManagement, setShowQRManagement] = useState(false);
 
     useEffect(() => {
         fetchDashboardData();
@@ -31,7 +33,7 @@ const AdminDashboardView = () => {
             }
 
             if (groupsResponse.success) {
-                setGroups(groupsResponse.data);
+                setGroups(groupsResponse.data.groups || []);
             }
         } catch (err) {
             console.error('Dashboard data fetch error:', err);
@@ -159,7 +161,7 @@ const AdminDashboardView = () => {
             <div className="dashboard-section">
                 <h2>クイックアクション</h2>
                 <div className="quick-actions">
-                    <button className="action-btn">
+                    <button className="action-btn" onClick={() => setShowQRManagement(true)}>
                         <span className="action-icon">📱</span>
                         <span className="action-text">QRコード生成</span>
                     </button>
@@ -177,6 +179,18 @@ const AdminDashboardView = () => {
                     </button>
                 </div>
             </div>
+
+            {/* QR管理モーダル */}
+            {showQRManagement && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '800px', width: '95%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+                            <button onClick={() => setShowQRManagement(false)} className="btn btn--sm btn--secondary">閉じる</button>
+                        </div>
+                        <QRManagement />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

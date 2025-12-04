@@ -29,7 +29,7 @@ class AttendanceService {
           // 新規記録の作成
           const insertResult = await query(
             'INSERT INTO user_attendance_records (user_id, date, status, check_in_time, check_out_time, reason) VALUES (?, ?, ?, ?, ?, ?)',
-            [userId, date, type, timestamp, timestamp, reason]
+            [userId, date, type, timestamp, timestamp, reason || null]
           );
           recordId = insertResult.insertId;
         }

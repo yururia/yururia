@@ -12,7 +12,7 @@ const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     let token;
 
-    // Header or Cookie check
+    //Header or Cookie check
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1];
     } else if (req.cookies && req.cookies.token) {
@@ -43,9 +43,9 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // DBから最新のユーザー情報を取得
+    // DBから最新のユーザー情報を取得（organization_idを含む）
     const users = await query(
-      'SELECT id, name, email, role, student_id, employee_id, department FROM users WHERE id = ?',
+      'SELECT id, name, email, role, student_id, organization_id FROM users WHERE id = ?',
       [decoded.id]
     );
 
@@ -64,10 +64,8 @@ const authenticate = async (req, res, next) => {
     const user = users[0];
     req.user = user;
 
-    logger.debug('認証成功', {
-      userId: user.id,
-      email: user.email,
-      role: user.role
+    logger.debug('JWTトークンを検証しました', {
+      userId: user.id
     });
 
     next();
@@ -78,6 +76,7 @@ const authenticate = async (req, res, next) => {
 
 /**
  * [完全版] 役割（ロール）ベースのアクセス制御ミドルウェア
+ * 新ロール体系対応: owner, teacher, student
  */
 const requireRole = (roles) => {
   return (req, res, next) => {
@@ -91,121 +90,54 @@ const requireRole = (roles) => {
       });
     }
 
+    // ロールチェック
     if (!requiredRoles.includes(req.user.role)) {
-      logger.warn('権限エラー - 役割が不十分です', {
-        userId: req.user.id,
-        userRole: req.user.role,
-        requiredRoles
-      });
-      return res.status(403).json({
-        success: false,
-        message: 'この操作を行う権限がありません'
-      });
+      // 後方互換性: 'admin' が要求された場合は 'owner' も許可
+      const isAdminRequiredAndOwner = requiredRoles.includes('admin') && req.user.role === 'owner';
+      // 後方互換性: 'teacher' が要求された場合は 'owner' も許可
+      const isTeacherRequiredAndOwner = requiredRoles.includes('teacher') && req.user.role === 'owner';
+
+      if (!isAdminRequiredAndOwner && !isTeacherRequiredAndOwner) {
+        logger.warn('権限エラー - 役割が不十分です', {
+          userId: req.user.id,
+          userRole: req.user.role,
+          requiredRoles
+        });
+        return res.status(403).json({
+          success: false,
+          message: 'この操作を実行する権限がありません'
+        });
+      }
     }
+
+    logger.debug('認証成功', {
+      userId: req.user.id,
+      email: req.user.email,
+      role: req.user.role
+    });
 
     next();
   };
 };
 
 /**
- * 管理者権限チェックミドルウェア (requireRoleを使用)
+ * 管理者権限チェック（後方互換性のため残す）
+ * owner または teacher を許可
  */
-const requireAdmin = requireRole('admin');
-
-/**
- * クラス担当教員（または管理者）権限チェックミドルウェア
- * パラメータの groupId または id を使用してチェック
- */
-const requireClassTeacher = async (req, res, next) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: '認証が必要です' });
-    }
-
-    // 管理者は常に許可
-    if (req.user.role === 'admin') {
-      return next();
-    }
-
-    // 教員でない場合は拒否
-    if (req.user.role !== 'teacher') {
-      return res.status(403).json({ success: false, message: '権限がありません' });
-    }
-
-    // グループIDの取得 (params.groupId > params.id > body.groupId > body.class_id)
-    const groupId = req.params.groupId || req.params.id || req.body.groupId || req.body.class_id;
-
-    if (!groupId) {
-      logger.warn('requireClassTeacher: グループIDが指定されていません', { url: req.originalUrl });
-      return res.status(400).json({ success: false, message: 'グループIDが指定されていません' });
-    }
-
-    const isTeacher = await RoleService.isClassTeacher(req.user.id, groupId);
-
-    if (!isTeacher) {
-      logger.warn('権限エラー - 担当教員ではありません', { userId: req.user.id, groupId });
-      return res.status(403).json({ success: false, message: 'このクラスの担当教員ではありません' });
-    }
-
-    next();
-  } catch (error) {
-    logger.error('担当教員チェックエラー:', error);
-    res.status(500).json({ success: false, message: 'サーバーエラーが発生しました' });
-  }
-};
-
-
-/**
- * オプショナル認証ミドルウェア
- */
-const optionalAuth = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    let token = null;
-
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    } else if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
-    }
-
-    if (token) {
-      try {
-        const decoded = JWTUtil.verifyToken(token);
-        if (decoded) {
-          const users = await query(
-            'SELECT id, name, email, role, student_id, employee_id, department FROM users WHERE id = ?',
-            [decoded.id]
-          );
-          if (users.length > 0) {
-            req.user = users[0];
-          }
-        }
-      } catch (err) {
-        // トークンが無効な場合は無視
-      }
-    }
-
-    next();
-  } catch (error) {
-    logger.debug('オプショナル認証エラー:', error.message);
-    next();
-  }
+const requireAdmin = (req, res, next) => {
+  return requireRole(['owner', 'teacher'])(req, res, next);
 };
 
 /**
- * レート制限ミドルウェア（認証済みユーザー用）
+ * オーナー専用権限チェック
  */
-const authRateLimit = (req, res, next) => {
-  req.rateLimitKey = `auth_${req.user?.id || req.ip}`;
-  next();
+const requireOwner = (req, res, next) => {
+  return requireRole(['owner'])(req, res, next);
 };
 
 module.exports = {
   authenticate,
+  requireRole,
   requireAdmin,
-  requireClassTeacher,
-  optionalAuth,
-  authRateLimit,
-  requireRole
+  requireOwner
 };

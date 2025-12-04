@@ -2,7 +2,7 @@ const express = require('express');
 const { body, query, validationResult } = require('express-validator');
 const QRService = require('../services/QRService');
 const StudentAttendanceService = require('../services/StudentAttendanceService');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
 const { query: dbQuery } = require('../config/database');
 const logger = require('../utils/logger');
 
@@ -11,7 +11,7 @@ const router = express.Router();
 /**
  * 場所ベースQRコード生成（管理者のみ）- 新システム用
  */
-router.post('/generate-location', authenticate, requireAdmin, [
+router.post('/generate-location', authenticate, requireRole(['admin', 'teacher', 'employee']), [
   body('locationName')
     .trim()
     .isLength({ min: 1, max: 255 })
@@ -136,7 +136,7 @@ router.get('/codes', authenticate, async (req, res) => {
 /**
  * QRコード無効化
  */
-router.put('/:id/deactivate', authenticate, requireAdmin, async (req, res) => {
+router.put('/:id/deactivate', authenticate, requireRole(['admin', 'teacher', 'employee']), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -406,7 +406,7 @@ router.get('/history', authenticate, [
 /**
  * QRコードの削除
  */
-router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
+router.delete('/:id', authenticate, requireRole(['admin', 'teacher', 'employee']), async (req, res) => {
   try {
     const { id } = req.params;
 

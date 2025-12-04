@@ -20,7 +20,7 @@ class ExportService {
             // 権限チェック
             let queryUserId = userId;
             if (targetUserId) {
-                if (userRole !== 'admin') {
+                if (userRole !== 'admin' && userRole !== 'owner' && userRole !== 'teacher') {
                     throw new Error('管理者のみが他のユーザーのデータをエクスポートできます');
                 }
                 queryUserId = targetUserId;
@@ -30,13 +30,13 @@ class ExportService {
             const records = await query(
                 `SELECT 
           DATE_FORMAT(date, '%Y-%m-%d') as date,
-          TIME_FORMAT(start_time, '%H:%i') as start_time,
-          TIME_FORMAT(end_time, '%H:%i') as end_time,
+          TIME_FORMAT(check_in_time, '%H:%i') as start_time,
+          TIME_FORMAT(check_out_time, '%H:%i') as end_time,
           status,
-          notes
-        FROM attendance
+          reason as notes
+        FROM user_attendance_records
         WHERE user_id = ? AND date BETWEEN ? AND ?
-        ORDER BY date ASC, start_time ASC`,
+        ORDER BY date ASC, check_in_time ASC`,
                 [queryUserId, startDate, endDate]
             );
 
@@ -77,7 +77,7 @@ class ExportService {
             const event = events[0];
 
             // 権限チェック（管理者またはイベント作成者のみ）
-            if (userRole !== 'admin' && event.created_by !== userId) {
+            if (userRole !== 'admin' && userRole !== 'owner' && userRole !== 'teacher' && event.created_by !== userId) {
                 throw new Error('このイベントの参加者リストをエクスポートする権限がありません');
             }
 
@@ -120,7 +120,7 @@ class ExportService {
     static async exportAllAttendanceRecords(userId, userRole, startDate, endDate) {
         try {
             // 管理者チェック
-            if (userRole !== 'admin') {
+            if (userRole !== 'admin' && userRole !== 'owner' && userRole !== 'teacher') {
                 throw new Error('管理者のみが全データをエクスポートできます');
             }
 
@@ -128,16 +128,16 @@ class ExportService {
             const records = await query(
                 `SELECT 
           u.name as user_name,
-          u.employee_id,
+          u.student_id,
           DATE_FORMAT(a.date, '%Y-%m-%d') as date,
-          TIME_FORMAT(a.start_time, '%H:%i') as start_time,
-          TIME_FORMAT(a.end_time, '%H:%i') as end_time,
+          TIME_FORMAT(a.check_in_time, '%H:%i') as start_time,
+          TIME_FORMAT(a.check_out_time, '%H:%i') as end_time,
           a.status,
-          a.notes
-        FROM attendance a
+          a.reason as notes
+        FROM user_attendance_records a
         JOIN users u ON a.user_id = u.id
         WHERE a.date BETWEEN ? AND ?
-        ORDER BY u.employee_id ASC, a.date ASC, a.start_time ASC`,
+        ORDER BY u.student_id ASC, a.date ASC, a.check_in_time ASC`,
                 [startDate, endDate]
             );
 
@@ -148,16 +148,16 @@ class ExportService {
                 recordCount: records.length
             });
 
-            // ヘッダーに「氏名」「社員ID」を追加
-            const headers = ['氏名', '社員ID', '日付', '曜日', '開始時刻', '終了時刻', 'ステータス', '備考'];
-            const fields = ['user_name', 'employee_id', 'date', 'day_of_week', 'start_time', 'end_time', 'status', 'notes'];
+            // ヘッダーに「氏名」「学生ID」を追加
+            const headers = ['氏名', '学生ID', '日付', '曜日', '開始時刻', '終了時刻', 'ステータス', '備考'];
+            const fields = ['user_name', 'student_id', 'date', 'day_of_week', 'start_time', 'end_time', 'status', 'notes'];
 
             const { arrayToCSV } = require('../utils/csvGenerator');
 
             // データを整形
             const formattedData = records.map(record => ({
                 user_name: record.user_name,
-                employee_id: record.employee_id || '-',
+                student_id: record.student_id || '-',
                 date: record.date,
                 day_of_week: getDayOfWeek(record.date),
                 start_time: record.start_time || '-',

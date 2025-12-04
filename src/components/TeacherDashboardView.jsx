@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { groupApi, absenceRequestApi } from '../api';
 import useAuthStore from '../stores/authStore';
+import QRManagement from './admin/QRManagement';
 import './TeacherDashboardView.css';
 
 /**
@@ -13,6 +14,7 @@ const TeacherDashboardView = () => {
     const [todayClasses, setTodayClasses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showQRManagement, setShowQRManagement] = useState(false);
 
     useEffect(() => {
         fetchTeacherData();
@@ -100,6 +102,15 @@ const TeacherDashboardView = () => {
                     <div className="stat-content">
                         <h3 className="stat-value">{todayClasses.length}</h3>
                         <p className="stat-label">今日の授業</p>
+                    </div>
+
+                    {/* クイックアクション (教員用) */}
+                    <div className="dashboard-section">
+                        <div className="quick-actions" style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                            <button className="btn btn--primary" onClick={() => setShowQRManagement(true)}>
+                                📱 QRコード生成
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -197,6 +208,18 @@ const TeacherDashboardView = () => {
                     </div>
                 )}
             </div>
+
+            {/* QR管理モーダル */}
+            {showQRManagement && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '800px', width: '95%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+                            <button onClick={() => setShowQRManagement(false)} className="btn btn--sm btn--secondary">閉じる</button>
+                        </div>
+                        <QRManagement />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

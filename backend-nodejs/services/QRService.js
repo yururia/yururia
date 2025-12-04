@@ -466,16 +466,26 @@ class QRService {
           u.name as created_by_name
         FROM qr_codes qr
         LEFT JOIN users u ON qr.created_by = u.id
+        WHERE 1=1
       `;
 
       const params = [];
 
       if (activeOnly) {
-        sql += ' WHERE qr.is_active = TRUE';
+        sql += ' AND qr.is_active = TRUE';
       }
 
-      sql += ' ORDER BY qr.created_at DESC LIMIT ? OFFSET ?';
-      params.push(limit, offset);
+      sql += ' ORDER BY qr.created_at DESC';
+
+      // Add pagination
+      if (limit) {
+        sql += ' LIMIT ?';
+        params.push(Number(limit));
+      }
+      if (offset) {
+        sql += ' OFFSET ?';
+        params.push(Number(offset));
+      }
 
       const results = await query(sql, params);
 

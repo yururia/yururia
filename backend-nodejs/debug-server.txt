@@ -1,0 +1,68 @@
+起動開始: 2025-12-03T05:04:58.480Z
+========================================
+サーバー起動開始...
+========================================
+
+✓ ルート読み込み: Auth (./routes/auth)
+✓ ルート読み込み: User (./routes/users)
+✓ ルート読み込み: Attendance (./routes/attendance)
+✓ ルート読み込み: Student (./routes/students)
+✓ ルート読み込み: Student Attendance (./routes/student-attendance)
+✓ ルート読み込み: Class (./routes/classes)
+✓ ルート読み込み: Subject (./routes/subjects)
+✓ ルート読み込み: Group (./routes/groups)
+✓ ルート読み込み: QR (./routes/qr)
+✓ ルート読み込み: Event (./routes/events)
+✓ ルート読み込み: Report (./routes/reports)
+✓ ルート読み込み: Notification (./routes/notifications)
+✓ ルート読み込み: Settings (./routes/settings)
+✓ ルート読み込み: Export (./routes/export)
+✓ ルート読み込み: Organization (./routes/organizations)
+✓ ルート読み込み: Security (./routes/security)
+✓ ルート読み込み: Absence Request (./routes/absence-requests)
+✓ ルート読み込み: Approval (./routes/approvals)
+✓ ルート読み込み: Timetable (./routes/timetables)
+✓ ルート読み込み: Attendance Stats (./routes/attendance-stats)
+✓ ルート読み込み: Invitation (./routes/invitations)
+ERROR: ✗ ルート読み込み失敗: Invitation
+Cannot find module 'bcrypt'
+Require stack:
+- C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\services\InvitationService.js
+- C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\routes\invitations.js
+- C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\server.js
+Error: Cannot find module 'bcrypt'
+Require stack:
+- C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\services\InvitationService.js
+- C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\routes\invitations.js
+- C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:244:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\services\InvitationService.js:4:16)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14)
+ERROR: 初期化中に致命的なエラーが発生しました
+Cannot find module 'bcrypt'
+Require stack:
+- C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\services\InvitationService.js
+- C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\routes\invitations.js
+- C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\server.js
+Error: Cannot find module 'bcrypt'
+Require stack:
+- C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\services\InvitationService.js
+- C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\routes\invitations.js
+- C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:244:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (C:\Users\yasud\OneDrive\デスクトップ\attendance-app\backend-nodejs\services\InvitationService.js:4:16)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14)

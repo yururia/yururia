@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://192.168.12.120:3001/api';
+const API_BASE_URL = '/api';
 
 // APIクライアントの設定
 const apiClient = axios.create({

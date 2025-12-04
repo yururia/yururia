@@ -5,19 +5,18 @@ const JWTUtil = require('../utils/jwt');
 const logger = require('../utils/logger');
 
 /**
- * 認証サービス
+ * 認証サービス（マルチテナント対応版）
  */
 class AuthService {
   /**
-   * [完全版] ユーザーログイン (学生ID対応)
+   * ユーザーログイン
    */
   static async login(email, password) {
     try {
       logger.info('ログイン試行', { email });
 
-      // [修正] 必要なカラムのみ取得
       const users = await query(
-        'SELECT id, name, email, password, employee_id, student_id, department, role FROM users WHERE email = ?',
+        'SELECT id, name, email, password, student_id, organization_id, role FROM users WHERE email = ?',
         [email]
       );
 
@@ -47,31 +46,18 @@ class AuthService {
         role: user.role
       };
 
-      if (user.role === 'student') {
-        if (!studentId) {
-          const studentInfo = await query(
-            'SELECT student_id FROM students WHERE email = ?',
-            [user.email]
-          );
-          if (studentInfo.length > 0) {
-            studentId = studentInfo[0].student_id;
-          } else {
-            logger.warn('学生ユーザーの学生情報が見つかりません', { email });
-          }
-        }
-
-        if (studentId) {
-          tokenPayload.student_id = studentId;
-        }
+      if (user.role === 'student' && studentId) {
+        tokenPayload.student_id = studentId;
       }
 
       const token = JWTUtil.generateToken(tokenPayload);
+      logger.info('Token generated:', { tokenLength: token.length });
 
       logger.info('ログイン成功', {
         userId: user.id,
         email: user.email,
         role: user.role,
-        studentId: studentId
+        organizationId: user.organization_id
       });
 
       return {
@@ -83,9 +69,8 @@ class AuthService {
             id: user.id,
             name: user.name,
             email: user.email,
-            employeeId: user.employee_id,
             studentId: studentId,
-            department: user.department,
+            organizationId: user.organization_id,
             role: user.role
           }
         }
@@ -100,143 +85,17 @@ class AuthService {
   }
 
   /**
-   * [完全版] ユーザー新規登録 (学生ID対応)
+   * ユーザー新規登録（招待システムに移行したため、無効化）
    */
   static async register(userData) {
     try {
-      logger.info('新規登録試行', { email: userData.email, role: userData.role });
-
-      const existingEmail = await query(
-        'SELECT id FROM users WHERE email = ?',
-        [userData.email]
-      );
-
-      if (existingEmail.length > 0) {
-        return {
-          success: false,
-          message: 'このメールアドレスは既に使用されています'
-        };
-      }
-
-      const role = userData.role || 'employee';
-      if (role !== 'employee' && role !== 'student') {
-        return {
-          success: false,
-          message: '無効な役割が指定されました'
-        };
-      }
-
-      let employeeId = null;
-      let studentId = null;
-      let department = userData.department || null;
-
-      if (role === 'employee') {
-        if (!userData.employeeId) {
-          return {
-            success: false,
-            message: '社員IDが必要です'
-          };
-        }
-        employeeId = userData.employeeId;
-        const existingEmployeeId = await query(
-          'SELECT id FROM users WHERE employee_id = ?',
-          [employeeId]
-        );
-
-        if (existingEmployeeId.length > 0) {
-          return {
-            success: false,
-            message: 'この社員IDは既に使用されています'
-          };
-        }
-      } else if (role === 'student') {
-        if (!userData.studentId) {
-          return {
-            success: false,
-            message: '学生IDが必要です'
-          };
-        }
-        studentId = userData.studentId;
-        const existingStudentId = await query(
-          'SELECT student_id FROM students WHERE student_id = ?',
-          [studentId]
-        );
-
-        if (existingStudentId.length > 0) {
-          return {
-            success: false,
-            message: 'この学生IDは既に使用されています'
-          };
-        }
-        employeeId = null;
-        department = null;
-      }
-
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
-
-      const result = await transaction(async (connection) => {
-        const [userResult] = await connection.execute(
-          'INSERT INTO users (name, email, password, employee_id, student_id, department, role) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [
-            userData.name,
-            userData.email,
-            hashedPassword,
-            employeeId,
-            studentId,
-            department,
-            role
-          ]
-        );
-
-        const userId = userResult.insertId;
-
-        if (role === 'student') {
-          await connection.execute(
-            'INSERT INTO students (student_id, name, email, status) VALUES (?, ?, ?, ?)',
-            [
-              studentId,
-              userData.name,
-              userData.email,
-              'active'
-            ]
-          );
-        }
-
-        return { userId, role };
-      });
-
-      const token = JWTUtil.generateToken({
-        id: result.userId,
-        email: userData.email,
-        role: result.role,
-        student_id: studentId
-      });
-
-      logger.info('新規登録成功', {
-        userId: result.userId,
-        email: userData.email,
-        role: result.role,
-        studentId: studentId
-      });
-
+      logger.warn('直接登録試行（無効化済み）', { email: userData.email });
       return {
-        success: true,
-        message: 'アカウントが作成されました',
-        data: {
-          token,
-          user: {
-            id: result.userId,
-            name: userData.name,
-            email: userData.email,
-            employeeId: employeeId,
-            studentId: studentId,
-            department: department,
-            role: result.role
-          }
-        }
+        success: false,
+        message: '直接登録は無効化されています。管理者からの招待リンクをご利用ください。'
       };
     } catch (error) {
-      logger.error('新規登録エラー:', { message: error.message, stack: error.stack });
+      logger.error('新規登録エラー:', { message: error.message });
       return {
         success: false,
         message: 'サーバーエラーが発生しました'
@@ -245,14 +104,14 @@ class AuthService {
   }
 
   /**
-   * [完全版] トークンからユーザー情報を取得 (学生ID対応)
+   * トークンからユーザー情報を取得
    */
   static async getUserFromToken(token) {
     try {
       const payload = JWTUtil.verifyToken(token);
 
       const users = await query(
-        'SELECT id, name, email, employee_id, student_id, department, role FROM users WHERE id = ?',
+        'SELECT id, name, email, student_id, organization_id, role FROM users WHERE id = ?',
         [payload.id]
       );
 
@@ -268,7 +127,6 @@ class AuthService {
         return null;
       }
 
-      // [修正] ペイロードに student_id があれば、それも検証・返す
       let studentId = user.student_id;
       if (user.role === 'student') {
         if (payload.student_id && payload.student_id !== user.student_id) {
@@ -282,9 +140,8 @@ class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
-        employeeId: user.employee_id,
-        studentId: studentId, // student_idを返す
-        department: user.department,
+        studentId: studentId,
+        organizationId: user.organization_id,
         role: user.role
       };
     } catch (error) {
@@ -347,7 +204,7 @@ class AuthService {
    */
   static async updateProfile(userId, updateData) {
     try {
-      const allowedFields = ['name', 'email', 'department'];
+      const allowedFields = ['name', 'email'];
       const updateFields = [];
       const updateValues = [];
 
@@ -394,96 +251,6 @@ class AuthService {
       };
     } catch (error) {
       logger.error('プロフィール更新エラー:', error.message);
-      return {
-        success: false,
-        message: 'サーバーエラーが発生しました'
-      };
-    }
-  }
-
-  /**
-   * パスワードリセット要求 (トークン生成)
-   */
-  static async forgotPassword(email) {
-    try {
-      const users = await query(
-        'SELECT id FROM users WHERE email = ?',
-        [email]
-      );
-
-      if (users.length === 0) {
-        // セキュリティのため、ユーザーが存在しなくても成功を返す（列挙攻撃防止）
-        // ただし、ログには記録する
-        logger.info('パスワードリセット要求 - ユーザー不在', { email });
-        return {
-          success: true,
-          message: 'パスワードリセットの手順をメールで送信しました'
-        };
-      }
-
-      const user = users[0];
-
-      // トークン生成
-      const token = crypto.randomBytes(32).toString('hex');
-      const expires = new Date(Date.now() + 3600000); // 1時間後
-
-      await query(
-        'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
-        [token, expires, user.id]
-      );
-
-      // 開発環境用: ログにリンクを出力
-      const resetLink = `http://localhost:3000/reset-password?token=${token}`;
-      logger.info('パスワードリセットリンク生成', { email, resetLink });
-
-      // 本番環境ではここでメール送信処理を行う
-
-      return {
-        success: true,
-        message: 'パスワードリセットの手順をメールで送信しました'
-      };
-    } catch (error) {
-      logger.error('パスワードリセット要求エラー:', error.message);
-      return {
-        success: false,
-        message: 'サーバーエラーが発生しました'
-      };
-    }
-  }
-
-  /**
-   * パスワードリセット実行
-   */
-  static async resetPassword(token, newPassword) {
-    try {
-      const users = await query(
-        'SELECT id FROM users WHERE reset_token = ? AND reset_token_expires > NOW()',
-        [token]
-      );
-
-      if (users.length === 0) {
-        return {
-          success: false,
-          message: 'パスワードリセットトークンが無効か、期限切れです'
-        };
-      }
-
-      const user = users[0];
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-      await query(
-        'UPDATE users SET password = ?, reset_token = NULL, reset_token_expires = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [hashedPassword, user.id]
-      );
-
-      logger.info('パスワードリセット成功', { userId: user.id });
-
-      return {
-        success: true,
-        message: 'パスワードが再設定されました'
-      };
-    } catch (error) {
-      logger.error('パスワードリセット実行エラー:', error.message);
       return {
         success: false,
         message: 'サーバーエラーが発生しました'
