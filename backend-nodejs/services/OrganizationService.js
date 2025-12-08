@@ -15,6 +15,7 @@ class OrganizationService {
             const sql = `
         SELECT 
           id, name, type, address, phone, email, 
+          student_join_code,
           created_at, updated_at
         FROM organizations
         WHERE id = ?

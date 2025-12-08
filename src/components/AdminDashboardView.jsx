@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { organizationApi, groupApi } from '../api';
+import useAuthStore from '../stores/authStore';
 import QRManagement from './admin/QRManagement';
 import './AdminDashboardView.css';
 
@@ -7,11 +9,15 @@ import './AdminDashboardView.css';
  * 管理者ダッシュボードビュー
  */
 const AdminDashboardView = () => {
+    const navigate = useNavigate();
+    const { user } = useAuthStore();
     const [stats, setStats] = useState(null);
     const [groups, setGroups] = useState([]);
+    const [organization, setOrganization] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showQRManagement, setShowQRManagement] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         fetchDashboardData();
@@ -22,11 +28,18 @@ const AdminDashboardView = () => {
         setError(null);
 
         try {
-            // 組織統計とグループ一覧を並行取得
-            const [statsResponse, groupsResponse] = await Promise.all([
-                organizationApi.getOrganizationStats(1), // デフォルト組織ID=1
+            const orgId = user?.organizationId || 1;
+
+            // 組織情報、統計、グループ一覧を並行取得
+            const [orgResponse, statsResponse, groupsResponse] = await Promise.all([
+                organizationApi.getOrganization(orgId),
+                organizationApi.getOrganizationStats(orgId),
                 groupApi.getGroups()
             ]);
+
+            if (orgResponse.success) {
+                setOrganization(orgResponse.data);
+            }
 
             if (statsResponse.success) {
                 setStats(statsResponse.data);
@@ -109,11 +122,53 @@ const AdminDashboardView = () => {
                 </div>
             </div>
 
+            {/* 組織管理セクション */}
+            {organization && (user?.role === 'owner' || user?.role === 'admin') && (
+                <div className="dashboard-section organization-section">
+                    <div className="section-header">
+                        <h2>🏢 組織管理</h2>
+                    </div>
+                    <div className="organization-info-card">
+                        <div className="org-info-row">
+                            <span className="org-label">組織名</span>
+                            <span className="org-value">{organization.name}</span>
+                        </div>
+                        <div className="org-info-row">
+                            <span className="org-label">組織ID</span>
+                            <span className="org-value">#{organization.id}</span>
+                        </div>
+                        <div className="org-info-row join-code-row">
+                            <span className="org-label">📋 生徒用参加コード</span>
+                            <div className="join-code-container">
+                                <code className="join-code">
+                                    {organization.student_join_code || '未設定'}
+                                </code>
+                                {organization.student_join_code && (
+                                    <button
+                                        className="copy-btn"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(organization.student_join_code);
+                                            setCopied(true);
+                                            setTimeout(() => setCopied(false), 2000);
+                                        }}
+                                    >
+                                        {copied ? '✓ コピー済み' : 'コピー'}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        <p className="join-code-hint">
+                            このコードを生徒に共有すると、生徒は新規登録時にこのコードで組織に参加できます。
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* グループ一覧 */}
             <div className="dashboard-section">
                 <div className="section-header">
                     <h2>グループ一覧</h2>
-                    <button className="btn btn--primary" onClick={() => {/* TODO: グループ作成モーダル */ }}>
+                    <button className="btn btn--primary" onClick={() => navigate('/groups')}>
                         + 新規グループ
                     </button>
                 </div>
@@ -121,7 +176,7 @@ const AdminDashboardView = () => {
                 {groups.length === 0 ? (
                     <div className="empty-state">
                         <p>グループがまだありません</p>
-                        <button className="btn btn--secondary">最初のグループを作成</button>
+                        <button className="btn btn--secondary" onClick={() => navigate('/groups')}>最初のグループを作成</button>
                     </div>
                 ) : (
                     <div className="groups-grid">
@@ -148,8 +203,8 @@ const AdminDashboardView = () => {
                                     </p>
                                 </div>
                                 <div className="group-actions">
-                                    <button className="btn btn--sm btn--secondary">詳細</button>
-                                    <button className="btn btn--sm btn--primary">編集</button>
+                                    <button className="btn btn--sm btn--secondary" onClick={() => navigate('/groups')}>詳細</button>
+                                    <button className="btn btn--sm btn--primary" onClick={() => navigate('/groups')}>編集</button>
                                 </div>
                             </div>
                         ))}
@@ -165,17 +220,21 @@ const AdminDashboardView = () => {
                         <span className="action-icon">📱</span>
                         <span className="action-text">QRコード生成</span>
                     </button>
-                    <button className="action-btn">
+                    <button className="action-btn" onClick={() => navigate('/timetable')}>
                         <span className="action-icon">📅</span>
                         <span className="action-text">時間割管理</span>
                     </button>
-                    <button className="action-btn">
+                    <button className="action-btn" onClick={() => navigate('/events')}>
+                        <span className="action-icon">📆</span>
+                        <span className="action-text">イベント管理</span>
+                    </button>
+                    <button className="action-btn" onClick={() => alert('IP範囲設定機能は開発中です')}>
                         <span className="action-icon">🔒</span>
                         <span className="action-text">IP範囲設定</span>
                     </button>
-                    <button className="action-btn">
+                    <button className="action-btn" onClick={() => navigate('/approvals')}>
                         <span className="action-icon">📊</span>
-                        <span className="action-text">レポート出力</span>
+                        <span className="action-text">承認管理</span>
                     </button>
                 </div>
             </div>

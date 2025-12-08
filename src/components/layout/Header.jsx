@@ -42,26 +42,32 @@ const Header = () => {
               <NavLink to="/chat" className={getLinkClass}>チャット</NavLink>
 
               {/* ロール別リンク */}
-              {currentRole === 'admin' && (
+              {(currentRole === 'owner' || currentRole === 'admin') && (
                 <>
                   <NavLink to="/students" className={getLinkClass}>学生管理</NavLink>
-                  <NavLink to="/student-attendance" className={getLinkClass}>出欠記録</NavLink>
-                  {/* [追加] イベント管理リンクを追加 */}
+                  <NavLink to="/groups" className={getLinkClass}>グループ管理</NavLink>
                   <NavLink to="/events" className={getLinkClass}>イベント管理</NavLink>
+                  <NavLink to="/timetable" className={getLinkClass}>時間割</NavLink>
+                  <NavLink to="/student-attendance" className={getLinkClass}>出欠記録</NavLink>
+                </>
+              )}
+              {currentRole === 'teacher' && (
+                <>
+                  <NavLink to="/groups" className={getLinkClass}>グループ管理</NavLink>
+                  <NavLink to="/events" className={getLinkClass}>イベント</NavLink>
+                  <NavLink to="/student-attendance" className={getLinkClass}>出欠記録</NavLink>
                 </>
               )}
               {currentRole === 'employee' && (
                 <>
                   <NavLink to="/student-attendance" className={getLinkClass}>出欠記録</NavLink>
                   <NavLink to="/groups" className={getLinkClass}>グループ管理</NavLink>
-                  {/* [追加] イベント管理リンクを追加 */}
                   <NavLink to="/events" className={getLinkClass}>イベント管理</NavLink>
                 </>
               )}
               {currentRole === 'student' && (
                 <>
                   <NavLink to="/student-dashboard" className={getLinkClass}>学生</NavLink>
-                  {/* [追加] イベント一覧リンクを追加 */}
                   <NavLink to="/events" className={getLinkClass}>イベント一覧</NavLink>
                 </>
               )}

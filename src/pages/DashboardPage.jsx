@@ -29,8 +29,8 @@ const DashboardPage = () => {
     );
   }
 
-  // 管理者ダッシュボード
-  if (user.role === 'admin') {
+  // 管理者・オーナーダッシュボード
+  if (user.role === 'admin' || user.role === 'owner') {
     return <AdminDashboardView />;
   }
 

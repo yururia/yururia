@@ -322,3 +322,87 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+/* 組織管理セクション */
+.organization-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.organization-section .section-header h2 {
+    color: white;
+}
+
+.organization-info-card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.org-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.org-label {
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.org-value {
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.join-code-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding-top: 16px;
+}
+
+.join-code-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.join-code {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'Consolas', 'Monaco', monospace;
+    letter-spacing: 2px;
+    text-align: center;
+}
+
+.copy-btn {
+    padding: 12px 24px;
+    background: white;
+    color: #667eea;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.copy-btn:hover {
+    background: #f0f0f0;
+    transform: translateY(-2px);
+}
+
+.join-code-hint {
+    margin: 16px 0 0 0;
+    font-size: 14px;
+    opacity: 0.8;
+    line-height: 1.6;
+}
