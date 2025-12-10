@@ -1,4 +1,33 @@
-/* グローバルスタイル */
+@import './transitions.css';
+
+:root {
+  /* Colors - Modern Palette */
+  --primary-color: #3b82f6;
+  --primary-hover: #2563eb;
+  --secondary-color: #64748b;
+  --accent-color: #8b5cf6;
+
+  --bg-color: #ffffff;
+  --bg-secondary: #f8fafc;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+
+  /* Modern Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-base: all 0.2s ease-in-out;
+}
 
 /* リセットCSS */
 * {
@@ -10,16 +39,14 @@
 html {
   font-size: 16px;
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #ffffff;
-  color: #1f2937;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 code {
@@ -82,7 +109,9 @@ button {
 }
 
 /* 入力フィールドのリセット */
-input, textarea, select {
+input,
+textarea,
+select {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
@@ -90,7 +119,8 @@ input, textarea, select {
 }
 
 /* リストのリセット */
-ul, ol {
+ul,
+ol {
   list-style: none;
 }
 
@@ -106,7 +136,8 @@ table {
   width: 100%;
 }
 
-th, td {
+th,
+td {
   text-align: left;
   padding: 0.75rem;
   border-bottom: 1px solid #e5e7eb;
@@ -350,11 +381,11 @@ th {
   .sm\:text-sm {
     font-size: 0.875rem;
   }
-  
+
   .sm\:p-2 {
     padding: 0.5rem;
   }
-  
+
   .sm\:p-4 {
     padding: 1rem;
   }
@@ -364,7 +395,7 @@ th {
   .md\:text-base {
     font-size: 1rem;
   }
-  
+
   .md\:p-6 {
     padding: 1.5rem;
   }
@@ -374,7 +405,7 @@ th {
   .lg\:text-lg {
     font-size: 1.125rem;
   }
-  
+
   .lg\:p-8 {
     padding: 2rem;
   }
@@ -386,7 +417,7 @@ th {
     background-color: #1f2937;
     color: #f9fafb;
   }
-  
+
   .dark-mode .card {
     background-color: #374151;
     border-color: #4b5563;
@@ -403,6 +434,7 @@ th {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -417,6 +449,7 @@ th {
   from {
     transform: translateX(-100%);
   }
+
   to {
     transform: translateX(0);
   }
@@ -460,13 +493,15 @@ th {
 
 /* DashboardPage specific styles for new statuses */
 .status-early-departure {
-  background-color: #fcd34d; /* Yellowish for early departure */
+  background-color: #fcd34d;
+  /* Yellowish for early departure */
   color: #92400e;
 }
 
 /* CalendarPage specific styles for new statuses */
 .calendar-day--early-departure {
-  background-color: #fef08a; /* Lighter yellow for calendar day */
+  background-color: #fef08a;
+  /* Lighter yellow for calendar day */
   border-left: 4px solid #fcd34d;
 }
 
@@ -496,7 +531,7 @@ th {
   resize: vertical;
   min-height: 80px;
   margin-bottom: 1rem;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .reason-form-actions {
@@ -509,5 +544,6 @@ th {
   display: flex;
   gap: 0.75rem;
   margin-top: 1rem;
-  justify-content: center; /* Center the buttons */
+  justify-content: center;
+  /* Center the buttons */
 }

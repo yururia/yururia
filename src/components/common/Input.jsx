@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './Input.css';
 
 const Input = ({
@@ -25,7 +26,7 @@ const Input = ({
           {required && <span className="input-required">*</span>}
         </label>
       )}
-      <input
+      <motion.input
         id={inputId}
         name={name}
         type={type}
@@ -35,9 +36,23 @@ const Input = ({
         disabled={disabled}
         required={required}
         className={`input ${error ? 'input--error' : ''}`}
+        animate={error ? { x: [0, -10, 10, -10, 10, 0] } : { x: 0 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+        whileFocus={{ scale: 1.01, borderColor: '#3b82f6', boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)' }}
         {...props}
       />
-      {error && <span className="input-error">{error}</span>}
+      <AnimatePresence>
+        {error && (
+          <motion.span
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            className="input-error"
+          >
+            {error}
+          </motion.span>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

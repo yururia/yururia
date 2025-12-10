@@ -21,8 +21,13 @@
   border: 1px solid #d1d5db;
   border-radius: 0.375rem;
   font-size: 1rem;
+  /* 16px - iOS自動ズーム防止 */
+  min-height: 44px;
+  /* タッチターゲット最小サイズ */
   transition: all 0.2s ease-in-out;
   background-color: white;
+  -webkit-appearance: none;
+  /* iOS向け */
 }
 
 .input:focus {

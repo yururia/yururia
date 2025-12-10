@@ -1,4 +1,5 @@
 import React from 'react';
+import { AnimatePresence } from 'framer-motion';
 import useToastStore from '../../stores/toastStore';
 import Toast from './Toast';
 import './Toast.css';
@@ -8,13 +9,15 @@ const ToastContainer = () => {
 
     return (
         <div className="toast-container">
-            {toasts.map((toast) => (
-                <Toast
-                    key={toast.id}
-                    {...toast}
-                    onClose={removeToast}
-                />
-            ))}
+            <AnimatePresence mode="popLayout">
+                {toasts.map((toast) => (
+                    <Toast
+                        key={toast.id}
+                        {...toast}
+                        onClose={removeToast}
+                    />
+                ))}
+            </AnimatePresence>
         </div>
     );
 };

@@ -32,6 +32,7 @@
 - **Zustand**: 状態管理
 - **Axios**: API通信
 - **CSS Modules**: スタイリング
+- **Framer Motion**: アニメーション & トランジション
 
 ### バックエンド
 - **Node.js**: ランタイム環境

@@ -1,10 +1,12 @@
 import React, { lazy, Suspense, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import useAuthStore from './stores/authStore';
 import { attendanceApi } from './api/attendanceApi';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Header from './components/layout/Header';
-import ToastContainer from './components/common/ToastContainer'; // [追加]
+import ToastContainer from './components/common/ToastContainer';
+import PageTransition from './components/common/PageTransition'; // [追加]
 import { registerServiceWorker, unregister } from './services/pwaService';
 import UpdateNotification from './components/common/UpdateNotification';
 import './styles/global.css';
@@ -47,71 +49,67 @@ const PageLoader = () => (
 // 認証が必要なページを保護するコンポーネント
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const isLoading = useAuthStore((state) => state.isLoading); // AppContentで管理するローディング状態を想定
+  const isLoading = useAuthStore((state) => state.isLoading);
 
-  // 認証状態の読み込み中はローディングを表示
   if (isLoading) {
     return <PageLoader />;
   }
 
-  // 認証されていない場合はログインページにリダイレクト
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return <PageTransition>{children}</PageTransition>;
 };
 
-// ログインページ用のコンポーネント（認証済みの場合はダッシュボードにリダイレクト）
+// ログインページ用のコンポーネント
 const PublicRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);
 
-  // 認証状態の読み込み中はローディングを表示
   if (isLoading) {
     return <PageLoader />;
   }
 
-  // 認証済みの場合はカレンダーにリダイレクト
   if (isAuthenticated) {
     return <Navigate to="/calendar" replace />;
   }
 
-  return children;
+  return <PageTransition>{children}</PageTransition>;
 };
 
-// ゲストアクセス可能なページ（認証済みの場合はダッシュボードにリダイレクト）
+// ゲストアクセス可能なページ
 const GuestRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);
 
-  // 認証状態の読み込み中はローディングを表示
   if (isLoading) {
     return <PageLoader />;
   }
 
-  // 認証済みの場合はカレンダーにリダイレクト
   if (isAuthenticated) {
     return <Navigate to="/calendar" replace />;
   }
 
-  return children;
+  return <PageTransition>{children}</PageTransition>;
 };
 
 // 404 Not Found ページ
 const NotFoundPage = () => {
   const navigate = useNavigate();
   return (
-    <div className="not-found">
-      <h1>404 - ページが見つかりません</h1>
-      <p>お探しのページは存在しません。</p>
-      <button
-        onClick={() => navigate('/calendar')}
-        className="btn btn--primary"
-      >
-        カレンダーに戻る
-      </button>
-    </div>
+    <PageTransition>
+      <div className="not-found">
+        <h1>404 - ページが見つかりません</h1>
+        <p>お探しのページは存在しません。</p>
+        <button
+          onClick={() => navigate('/calendar')}
+          className="btn btn--primary"
+        >
+          カレンダーに戻る
+        </button>
+      </div>
+    </PageTransition>
   );
 };
 
@@ -119,160 +117,163 @@ const NotFoundPage = () => {
 const AppContent = React.memo(() => {
   const { isAuthenticated, checkAuth, isLoading } = useAuthStore();
   const [error, setError] = React.useState(null);
+  const location = useLocation();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
   const renderRoutes = () => (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        {/* ゲストアクセス可能なルート */}
-        <Route
-          path="/"
-          element={
-            <GuestRoute>
-              <HomePage />
-            </GuestRoute>
-          }
-        />
+    <AnimatePresence mode="wait">
+      <Suspense fallback={<PageLoader />}>
+        <Routes location={location} key={location.pathname}>
+          {/* ゲストアクセス可能なルート */}
+          <Route
+            path="/"
+            element={
+              <GuestRoute>
+                <HomePage />
+              </GuestRoute>
+            }
+          />
 
-        {/* パブリックルート */}
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <LoginPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <RegisterPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/forgot-password"
-          element={
-            <PublicRoute>
-              <ForgotPasswordPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/reset-password"
-          element={
-            <PublicRoute>
-              <ResetPasswordPage />
-            </PublicRoute>
-          }
-        />
+          {/* パブリックルート */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <PublicRoute>
+                <RegisterPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPasswordPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <PublicRoute>
+                <ResetPasswordPage />
+              </PublicRoute>
+            }
+          />
 
-        {/* 保護されたルート */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/calendar"
-          element={
-            <ProtectedRoute>
-              <CalendarPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/students"
-          element={
-            <ProtectedRoute>
-              <StudentPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/student-attendance"
-          element={
-            <ProtectedRoute>
-              <StudentAttendancePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/groups"
-          element={
-            <ProtectedRoute>
-              <GroupsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/student-dashboard"
-          element={
-            <ProtectedRoute>
-              <StudentDashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/events"
-          element={
-            <ProtectedRoute>
-              <EventManagementPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/qr-generator"
-          element={
-            <ProtectedRoute>
-              <QRGeneratorPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/absence-request"
-          element={
-            <ProtectedRoute>
-              <AbsenceRequestPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/approvals"
-          element={
-            <ProtectedRoute>
-              <ApprovalManagementPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/timetable"
-          element={
-            <ProtectedRoute>
-              <TimetablePage />
-            </ProtectedRoute>
-          }
-        />
+          {/* 保護されたルート */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/calendar"
+            element={
+              <ProtectedRoute>
+                <CalendarPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/students"
+            element={
+              <ProtectedRoute>
+                <StudentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student-attendance"
+            element={
+              <ProtectedRoute>
+                <StudentAttendancePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/groups"
+            element={
+              <ProtectedRoute>
+                <GroupsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student-dashboard"
+            element={
+              <ProtectedRoute>
+                <StudentDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/events"
+            element={
+              <ProtectedRoute>
+                <EventManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/qr-generator"
+            element={
+              <ProtectedRoute>
+                <QRGeneratorPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/absence-request"
+            element={
+              <ProtectedRoute>
+                <AbsenceRequestPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/approvals"
+            element={
+              <ProtectedRoute>
+                <ApprovalManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/timetable"
+            element={
+              <ProtectedRoute>
+                <TimetablePage />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* 404ページ */}
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
+          {/* 404ページ */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    </AnimatePresence>
   );
 
   return (

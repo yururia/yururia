@@ -1,15 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../../stores/authStore';
 import './Header.css';
 
+// ドロップダウンメニューコンポーネント（デスクトップ用）
+const Dropdown = ({ trigger, children }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="dropdown-container" ref={dropdownRef}>
+      <div className="dropdown-trigger" onClick={() => setIsOpen(!isOpen)}>
+        {trigger}
+      </div>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="dropdown-menu"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setIsOpen(false)}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// ハンバーガーアイコンコンポーネント
+const HamburgerIcon = ({ isOpen, onClick }) => (
+  <button
+    className={`hamburger-btn ${isOpen ? 'open' : ''}`}
+    onClick={onClick}
+    aria-label="メニューを開く"
+  >
+    <span className="hamburger-line"></span>
+    <span className="hamburger-line"></span>
+    <span className="hamburger-line"></span>
+  </button>
+);
+
 const Header = () => {
-  const { user, isAuthenticated, logout, isLoading, viewMode, toggleViewMode } = useAuthStore();
+  const { user, isAuthenticated, logout, isLoading } = useAuthStore();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // 現在の表示ロール（viewModeがあればそれを優先、なければ本来のロール）
-  const currentRole = viewMode || user?.role;
+  const currentRole = user?.role;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,102 +71,244 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // モバイルメニューが開いている時はスクロールを無効化
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
+
   const handleLogout = () => {
+    setIsMobileMenuOpen(false);
     logout();
     navigate('/login');
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
   };
 
   const getLinkClass = ({ isActive }) =>
     isActive ? 'nav-link active' : 'nav-link';
 
-  return (
-    <header className={`app-header ${isScrolled ? 'scrolled' : ''}`}>
-      <nav className="navbar">
-        <div className="navbar-left">
-          <NavLink to="/" className="navbar-brand">
-            📚 出欠管理
+  const getDropdownItemClass = ({ isActive }) =>
+    isActive ? 'dropdown-item active' : 'dropdown-item';
+
+  const getMobileLinkClass = ({ isActive }) =>
+    isActive ? 'mobile-nav-link active' : 'mobile-nav-link';
+
+  // 管理メニュー項目の定義
+  const getManagementItems = () => {
+    const items = [];
+    if (['owner', 'admin'].includes(currentRole)) {
+      items.push({ to: '/students', label: '学生管理' });
+      items.push({ to: '/groups', label: 'グループ管理' });
+      items.push({ to: '/events', label: 'イベント管理' });
+      items.push({ to: '/timetable', label: '時間割' });
+      items.push({ to: '/student-attendance', label: '出欠記録' });
+    } else if (currentRole === 'teacher') {
+      items.push({ to: '/groups', label: 'グループ管理' });
+      items.push({ to: '/events', label: 'イベント' });
+      items.push({ to: '/student-attendance', label: '出欠記録' });
+    } else if (currentRole === 'employee') {
+      items.push({ to: '/student-attendance', label: '出欠記録' });
+      items.push({ to: '/groups', label: 'グループ管理' });
+      items.push({ to: '/events', label: 'イベント管理' });
+    }
+    return items;
+  };
+
+  const renderManagementMenu = () => {
+    const items = getManagementItems();
+    if (items.length === 0) return null;
+
+    return (
+      <Dropdown
+        trigger={
+          <span className="nav-link" style={{ cursor: 'pointer' }}>
+            管理メニュー ▼
+          </span>
+        }
+      >
+        {items.map((item) => (
+          <NavLink key={item.to} to={item.to} className={getDropdownItemClass}>
+            {item.label}
           </NavLink>
-          {isAuthenticated && (
-            <div className="nav-links-left">
-              {/* 共通リンク */}
-              <NavLink to="/dashboard" className={getLinkClass}>ダッシュボード</NavLink>
-              {/* [追加] チャットリンクを追加 */}
-              <NavLink to="/chat" className={getLinkClass}>チャット</NavLink>
+        ))}
+      </Dropdown>
+    );
+  };
 
-              {/* ロール別リンク */}
-              {(currentRole === 'owner' || currentRole === 'admin') && (
-                <>
-                  <NavLink to="/students" className={getLinkClass}>学生管理</NavLink>
-                  <NavLink to="/groups" className={getLinkClass}>グループ管理</NavLink>
-                  <NavLink to="/events" className={getLinkClass}>イベント管理</NavLink>
-                  <NavLink to="/timetable" className={getLinkClass}>時間割</NavLink>
-                  <NavLink to="/student-attendance" className={getLinkClass}>出欠記録</NavLink>
-                </>
-              )}
-              {currentRole === 'teacher' && (
-                <>
-                  <NavLink to="/groups" className={getLinkClass}>グループ管理</NavLink>
-                  <NavLink to="/events" className={getLinkClass}>イベント</NavLink>
-                  <NavLink to="/student-attendance" className={getLinkClass}>出欠記録</NavLink>
-                </>
-              )}
-              {currentRole === 'employee' && (
-                <>
-                  <NavLink to="/student-attendance" className={getLinkClass}>出欠記録</NavLink>
-                  <NavLink to="/groups" className={getLinkClass}>グループ管理</NavLink>
-                  <NavLink to="/events" className={getLinkClass}>イベント管理</NavLink>
-                </>
-              )}
-              {currentRole === 'student' && (
-                <>
-                  <NavLink to="/student-dashboard" className={getLinkClass}>学生</NavLink>
+  return (
+    <>
+      <header className={`app-header ${isScrolled ? 'scrolled' : ''}`}>
+        <nav className="navbar">
+          <div className="navbar-left">
+            <NavLink to="/" className="navbar-brand">
+              📚 出欠管理
+            </NavLink>
+            {/* デスクトップ用ナビゲーション */}
+            {isAuthenticated && (
+              <div className="nav-links-left desktop-only">
+                <NavLink to="/dashboard" className={getLinkClass}>ダッシュボード</NavLink>
+                <NavLink to="/chat" className={getLinkClass}>チャット</NavLink>
+                {currentRole === 'student' && (
                   <NavLink to="/events" className={getLinkClass}>イベント一覧</NavLink>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+                )}
+              </div>
+            )}
+          </div>
 
-        <div className="navbar-right">
-          {isLoading ? (
-            <div className="nav-links-right">
-              <span className="loading-spinner"></span>
-            </div>
-          ) : isAuthenticated ? (
-            <div className="nav-links-right">
-              {/* 管理者・教員向けの学生モード切り替えボタン */}
-              {user?.role !== 'student' && (
-                <button
-                  onClick={toggleViewMode}
-                  className={`nav-link nav-button ${viewMode === 'student' ? 'active-mode' : ''}`}
-                  style={{
-                    backgroundColor: viewMode === 'student' ? '#10b981' : 'transparent',
-                    color: viewMode === 'student' ? 'white' : 'inherit',
-                    border: viewMode === 'student' ? 'none' : '1px solid currentColor'
-                  }}
+          <div className="navbar-right">
+            {/* デスクトップ用メニュー */}
+            {isLoading ? (
+              <div className="nav-links-right desktop-only">
+                <span className="loading-spinner"></span>
+              </div>
+            ) : isAuthenticated ? (
+              <div className="nav-links-right desktop-only">
+                {currentRole !== 'student' && renderManagementMenu()}
+                <Dropdown
+                  trigger={
+                    <div className="profile-trigger">
+                      <span className="profile-icon">
+                        {user?.name?.charAt(0) || 'P'}
+                      </span>
+                    </div>
+                  }
                 >
-                  {viewMode === 'student' ? '管理者に戻る' : '学生モード'}
-                </button>
-              )}
+                  <div className="dropdown-header" style={{ padding: '0.5rem 1rem', borderBottom: '1px solid #eee', fontSize: '0.8rem', color: '#888' }}>
+                    {user?.name}
+                  </div>
+                  <NavLink to="/calendar" className={getDropdownItemClass}>カレンダー</NavLink>
+                  <NavLink to="/profile" className={getDropdownItemClass}>プロフィール</NavLink>
+                  <button onClick={handleLogout} className="dropdown-item" style={{ color: '#ef4444' }}>
+                    ログアウト
+                  </button>
+                </Dropdown>
+              </div>
+            ) : (
+              <div className="nav-links-right desktop-only">
+                <NavLink to="/login" className={getLinkClass}>ログイン</NavLink>
+                <NavLink to="/register" className={getLinkClass}>新規登録</NavLink>
+              </div>
+            )}
 
-              <NavLink to="/calendar" className={getLinkClass}>カレンダー</NavLink>
-              <NavLink to="/profile" className="nav-link profile-link">
-                <span className="profile-icon">{user?.name?.charAt(0) || 'P'}</span>
-                {user?.name}
-              </NavLink>
-              <button onClick={handleLogout} className="nav-link nav-button">
-                ログアウト
-              </button>
-            </div>
-          ) : (
-            <div className="nav-links-right">
-              <NavLink to="/login" className={getLinkClass}>ログイン</NavLink>
-              <NavLink to="/register" className={getLinkClass}>新規登録</NavLink>
-            </div>
-          )}
-        </div>
-      </nav>
-    </header>
+            {/* モバイル用ハンバーガーボタン */}
+            <HamburgerIcon
+              isOpen={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            />
+          </div>
+        </nav>
+      </header>
+
+      {/* モバイルドロワーメニュー */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            {/* 背景オーバーレイ */}
+            <motion.div
+              className="mobile-menu-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeMobileMenu}
+            />
+            {/* ドロワー本体 */}
+            <motion.div
+              className="mobile-drawer"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'tween', duration: 0.3 }}
+            >
+              <div className="mobile-drawer-header">
+                <span className="mobile-drawer-title">メニュー</span>
+                <button className="mobile-drawer-close" onClick={closeMobileMenu}>
+                  ✕
+                </button>
+              </div>
+
+              {isAuthenticated ? (
+                <div className="mobile-drawer-content">
+                  {/* ユーザー情報 */}
+                  <div className="mobile-user-info">
+                    <span className="profile-icon large">{user?.name?.charAt(0) || 'P'}</span>
+                    <span className="mobile-user-name">{user?.name}</span>
+                  </div>
+
+                  {/* ナビゲーションリンク */}
+                  <div className="mobile-nav-section">
+                    <NavLink to="/dashboard" className={getMobileLinkClass} onClick={closeMobileMenu}>
+                      ダッシュボード
+                    </NavLink>
+                    <NavLink to="/calendar" className={getMobileLinkClass} onClick={closeMobileMenu}>
+                      カレンダー
+                    </NavLink>
+                    <NavLink to="/chat" className={getMobileLinkClass} onClick={closeMobileMenu}>
+                      チャット
+                    </NavLink>
+                  </div>
+
+                  {/* 管理メニュー（権限がある場合） */}
+                  {currentRole !== 'student' && getManagementItems().length > 0 && (
+                    <div className="mobile-nav-section">
+                      <div className="mobile-nav-section-title">管理</div>
+                      {getManagementItems().map((item) => (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          className={getMobileLinkClass}
+                          onClick={closeMobileMenu}
+                        >
+                          {item.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 学生用リンク */}
+                  {currentRole === 'student' && (
+                    <div className="mobile-nav-section">
+                      <NavLink to="/events" className={getMobileLinkClass} onClick={closeMobileMenu}>
+                        イベント一覧
+                      </NavLink>
+                    </div>
+                  )}
+
+                  {/* その他 */}
+                  <div className="mobile-nav-section">
+                    <NavLink to="/profile" className={getMobileLinkClass} onClick={closeMobileMenu}>
+                      プロフィール
+                    </NavLink>
+                    <button className="mobile-nav-link logout" onClick={handleLogout}>
+                      ログアウト
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mobile-drawer-content">
+                  <div className="mobile-nav-section">
+                    <NavLink to="/login" className={getMobileLinkClass} onClick={closeMobileMenu}>
+                      ログイン
+                    </NavLink>
+                    <NavLink to="/register" className={getMobileLinkClass} onClick={closeMobileMenu}>
+                      新規登録
+                    </NavLink>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

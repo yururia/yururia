@@ -72,16 +72,50 @@
 .btn--small {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
+  min-height: 36px;
 }
 
 .btn--medium {
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
+  min-height: 44px;
 }
 
 .btn--large {
   padding: 1rem 2rem;
   font-size: 1.125rem;
+  min-height: 52px;
+}
+
+/* フルワイズ（モバイル向け） */
+.btn--full-width {
+  width: 100%;
+}
+
+/* タップフィードバック（Active state） */
+.btn--primary:active:not(.btn--disabled) {
+  background-color: #1d4ed8;
+  transform: scale(0.98);
+}
+
+.btn--secondary:active:not(.btn--disabled) {
+  background-color: #374151;
+  transform: scale(0.98);
+}
+
+.btn--danger:active:not(.btn--disabled) {
+  background-color: #b91c1c;
+  transform: scale(0.98);
+}
+
+.btn--success:active:not(.btn--disabled) {
+  background-color: #047857;
+  transform: scale(0.98);
+}
+
+.btn--outline:active:not(.btn--disabled) {
+  background-color: #2563eb;
+  transform: scale(0.98);
 }
 
 /* 状態 */
