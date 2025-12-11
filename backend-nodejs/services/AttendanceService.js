@@ -315,6 +315,120 @@ class AttendanceService {
       };
     }
   }
+
+  // ========================================
+  // 時間ベースの出欠判定ロジック（新規追加）
+  // ========================================
+
+  /**
+   * QRスキャン時の出欠判定
+   * @param {number} organizationId - 組織ID
+   * @param {number} userId - ユーザーID
+   * @param {string} studentId - 学生ID
+   * @param {number} classSessionId - 授業セッションID（オプション）
+   * @returns {Promise<Object>} 判定結果
+   */
+  static async processAttendanceWithTimeCheck(organizationId, userId, studentId, classSessionId = null) {
+    try {
+      const now = new Date();
+      const currentTime = now.toTimeString().slice(0, 8); // HH:MM:SS
+
+      // 1. 組織設定を取得
+      const orgSettings = await query(
+        'SELECT late_limit_minutes, date_reset_time FROM organizations WHERE id = ?',
+        [organizationId]
+      );
+
+      if (orgSettings.length === 0) {
+        return { success: false, message: '組織設定が見つかりません' };
+      }
+
+      const { late_limit_minutes, date_reset_time } = orgSettings[0];
+      const lateLimitMinutes = late_limit_minutes || 15;
+      const resetTime = date_reset_time || '04:00:00';
+
+      // 2. 論理日付を計算（リセット時間前なら前日扱い）
+      let logicalDate = new Date(now);
+      if (currentTime < resetTime) {
+        logicalDate.setDate(logicalDate.getDate() - 1);
+      }
+      const logicalDateStr = logicalDate.toISOString().split('T')[0];
+
+      // 3. 該当する時限を取得
+      const timeSlot = await query(
+        `SELECT id, period_number, period_name, start_time, end_time
+         FROM organization_time_slots
+         WHERE organization_id = ?
+           AND start_time <= ? AND end_time >= ?
+         LIMIT 1`,
+        [organizationId, currentTime, currentTime]
+      );
+
+      let status = 'present';
+      let message = '出席が記録されました';
+      let action = 'none';
+      let classId = classSessionId;
+
+      if (timeSlot.length > 0) {
+        const slot = timeSlot[0];
+        const startTime = slot.start_time;
+
+        // 開始時間 + 遅刻許容時間を計算
+        const [hours, minutes, seconds] = startTime.split(':').map(Number);
+        const startDate = new Date(logicalDate);
+        startDate.setHours(hours, minutes + lateLimitMinutes, seconds || 0);
+        const lateLimitTime = startDate.toTimeString().slice(0, 8);
+
+        // 4. 判定
+        if (currentTime <= startTime) {
+          status = 'present';
+          message = `出席が記録されました（${slot.period_name || slot.period_number + '限'}）`;
+        } else if (currentTime <= lateLimitTime) {
+          status = 'present';
+          message = `出席が記録されました（${slot.period_name || slot.period_number + '限'}）`;
+        } else {
+          status = 'late';
+          message = `遅刻です。開始時間から${lateLimitMinutes}分以上経過しています。`;
+          action = 'redirect_to_form';
+        }
+      } else {
+        // 該当する時限がない場合
+        status = 'present';
+        message = '出席が記録されました';
+      }
+
+      // 5. 出欠記録を作成
+      await this.recordAttendance(
+        userId,
+        logicalDateStr,
+        status,
+        now.toISOString(),
+        null,
+        studentId
+      );
+
+      logger.info('時間ベース出欠判定完了', {
+        userId, studentId, status, logicalDate: logicalDateStr
+      });
+
+      return {
+        success: true,
+        status,
+        logicalDate: logicalDateStr,
+        action,
+        message,
+        classId
+      };
+    } catch (error) {
+      logger.error('時間ベース出欠判定エラー:', error.message);
+      return {
+        success: false,
+        message: '出欠判定処理に失敗しました',
+        error: error.message
+      };
+    }
+  }
 }
 
 module.exports = AttendanceService;
+

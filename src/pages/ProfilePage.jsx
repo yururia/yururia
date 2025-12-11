@@ -31,29 +31,29 @@ const ProfilePage = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const response = await attendanceApi.getUserProfile();
-      
+
       if (response.success) {
         setProfile(response.data.user);
         setEditData({
           name: response.data.user.name,
           email: response.data.user.email,
           department: response.data.user.department || '',
-          phone: response.data.user.phone || ''
+          student_id: response.data.user.student_id || ''
         });
-        
+
         // [新規] ロール変更ステータスも読み込む
         const statusRes = await attendanceApi.getRoleUpdateStatus();
         if (statusRes.success) {
           setRoleStatus(statusRes.data);
           // フォームの初期値を現在のロールと異なる方に設定
           setRoleFormData(prev => ({
-             ...prev, 
-             newRole: response.data.user.role === 'student' ? 'employee' : 'student' 
+            ...prev,
+            newRole: response.data.user.role === 'student' ? 'employee' : 'student'
           }));
         }
-        
+
       } else {
         setError('プロファイル情報の取得に失敗しました');
       }
@@ -78,14 +78,21 @@ const ProfilePage = () => {
   const handleSaveProfile = async () => {
     try {
       setIsLoading(true);
-      const response = await attendanceApi.updateUserProfile(user.id, editData);
+      // departmentを除外（DBにカラムがない可能性）
+      const { department, ...dataToSend } = editData;
+      console.log('送信データ:', dataToSend);
+      const response = await attendanceApi.updateUserProfile(user.id, dataToSend);
+      console.log('更新レスポンス:', response);
       if (response.success) {
         setIsEditing(false);
-        loadProfile(); 
+        // authStoreのユーザー情報も再取得
+        await useAuthStore.getState().checkAuth();
+        loadProfile();
       } else {
         setError(response.message || '更新に失敗しました');
       }
     } catch (err) {
+      console.error('更新エラー:', err);
       setError(err.message || '更新中にエラーが発生しました');
     } finally {
       setIsLoading(false);
@@ -95,10 +102,10 @@ const ProfilePage = () => {
   // --- [新規] ロール変更ハンドラー ---
   const openRoleModal = () => {
     setRoleError(null);
-    setRoleFormData(prev => ({ ...prev, password: '' })); 
+    setRoleFormData(prev => ({ ...prev, password: '' }));
     setShowRoleModal(true);
   };
-  
+
   const handleRoleFormChange = (e) => {
     setRoleFormData({ ...roleFormData, [e.target.name]: e.target.value });
   };
@@ -106,12 +113,12 @@ const ProfilePage = () => {
   const handleRoleSubmit = async (e) => {
     e.preventDefault();
     setRoleError(null);
-    
+
     if (roleFormData.newRole === profile?.role) {
-       setRoleError('現在の役割と同じです');
-       return;
+      setRoleError('現在の役割と同じです');
+      return;
     }
-    
+
     if (!roleFormData.password) {
       setRoleError('確認のため現在のパスワードを入力してください');
       return;
@@ -120,14 +127,14 @@ const ProfilePage = () => {
     try {
       setIsRoleLoading(true);
       const response = await attendanceApi.updateRole(
-        roleFormData.newRole, 
+        roleFormData.newRole,
         roleFormData.password
       );
-      
+
       if (response.success) {
         setShowRoleModal(false);
         alert('役割が変更されました。セキュリティのため、自動的にログアウトします。新しい役割で再度ログインしてください。');
-        logout(); 
+        logout();
       } else {
         setRoleError(response.message || '役割の変更に失敗しました');
       }
@@ -137,7 +144,7 @@ const ProfilePage = () => {
       setIsRoleLoading(false);
     }
   };
-  
+
   if (isLoading && !profile) {
     return <div className="profile-page"><p>読み込み中...</p></div>;
   }
@@ -149,7 +156,7 @@ const ProfilePage = () => {
   if (!profile) {
     return null;
   }
-  
+
   const roleMap = {
     admin: '管理者',
     employee: '教員',
@@ -178,7 +185,7 @@ const ProfilePage = () => {
             )}
           </div>
         </div>
-        
+
         <div className="profile-content">
           <div className="profile-card">
             <div className="profile-avatar-section">
@@ -199,7 +206,7 @@ const ProfilePage = () => {
                 <p>{roleMap[profile.role]}</p>
               </div>
             </div>
-            
+
             <div className="profile-details">
               <div className="profile-grid">
                 <div className="profile-field">
@@ -216,7 +223,7 @@ const ProfilePage = () => {
                     <p className="field-value">{profile.email}</p>
                   )}
                 </div>
-                
+
                 {profile.role !== 'student' && (
                   <div className="profile-field">
                     <label>部署</label>
@@ -232,14 +239,24 @@ const ProfilePage = () => {
                     )}
                   </div>
                 )}
-                
+
                 {profile.role === 'student' && (
                   <div className="profile-field">
                     <label>学生ID</label>
-                    <p className="field-value">{profile.student_id || '未設定'}</p>
+                    {isEditing ? (
+                      <Input
+                        name="student_id"
+                        value={editData.student_id}
+                        onChange={handleEditChange}
+                        className="edit-input"
+                        placeholder="学生IDを入力"
+                      />
+                    ) : (
+                      <p className="field-value">{profile.student_id || '未設定'}</p>
+                    )}
                   </div>
                 )}
-                
+
                 {profile.role === 'employee' && (
                   <div className="profile-field">
                     <label>社員ID</label>
@@ -264,35 +281,35 @@ const ProfilePage = () => {
 
           {/* [新規] ロール変更セクション */}
           <div className="profile-card profile-role-change">
-             <div className="profile-details">
-                <div className="profile-field">
-                  <label>役割（ロール）の変更</label>
-                  <p>
-                    役割（「学生」または「教員」）を変更します。この操作はトラブル防止のため、90日に1回のみ可能です。
+            <div className="profile-details">
+              <div className="profile-field">
+                <label>役割（ロール）の変更</label>
+                <p>
+                  役割（「学生」または「教員」）を変更します。この操作はトラブル防止のため、90日に1回のみ可能です。
+                </p>
+                {roleStatus.lastRoleUpdate && (
+                  <p className="field-value--muted">
+                    前回の変更日: {new Date(roleStatus.lastRoleUpdate).toLocaleDateString('ja-JP')}
                   </p>
-                  {roleStatus.lastRoleUpdate && (
-                    <p className="field-value--muted">
-                      前回の変更日: {new Date(roleStatus.lastRoleUpdate).toLocaleDateString('ja-JP')}
-                    </p>
-                  )}
-                  <Button
-                    variant="danger"
-                    onClick={openRoleModal}
-                    disabled={!roleStatus.canUpdate}
-                  >
-                    役割を変更する
-                  </Button>
-                  {!roleStatus.canUpdate && (
-                    <p className="error-message error-message--inline">
-                      次回の変更は {roleStatus.nextUpdateDate} 以降に可能です。
-                    </p>
-                  )}
-                </div>
-             </div>
+                )}
+                <Button
+                  variant="danger"
+                  onClick={openRoleModal}
+                  disabled={!roleStatus.canUpdate}
+                >
+                  役割を変更する
+                </Button>
+                {!roleStatus.canUpdate && (
+                  <p className="error-message error-message--inline">
+                    次回の変更は {roleStatus.nextUpdateDate} 以降に可能です。
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      
+
       {/* [新規] ロール変更モーダル */}
       {showRoleModal && (
         <div className="role-modal-overlay">
@@ -303,7 +320,7 @@ const ProfilePage = () => {
               学生から教員（またはその逆）になる場合のみ使用してください。
               この操作は90日に1回しか実行できません。
             </p>
-            
+
             <form onSubmit={handleRoleSubmit}>
               <div className="form-group">
                 <label>新しい役割</label>
@@ -340,11 +357,11 @@ const ProfilePage = () => {
                 required
                 placeholder="セキュリティ確認のため必須"
               />
-              
+
               {roleError && (
                 <p className="error-message">{roleError}</p>
               )}
-              
+
               <div className="modal-actions">
                 <Button type="button" variant="secondary" onClick={() => setShowRoleModal(false)} disabled={isRoleLoading}>
                   キャンセル

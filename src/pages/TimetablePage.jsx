@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { timetableApi, groupApi } from '../api';
 import useAuthStore from '../stores/authStore';
 import './TimetablePage.css';
 
 const TimetablePage = () => {
     const user = useAuthStore(state => state.user);
+    const [activeTab, setActiveTab] = useState('timetable'); // 'timetable' | 'settings'
     const [groups, setGroups] = useState([]);
     const [selectedGroup, setSelectedGroup] = useState(null);
     const [timetables, setTimetables] = useState([]);
@@ -14,14 +15,29 @@ const TimetablePage = () => {
     const [showImportModal, setShowImportModal] = useState(false);
     const [importFile, setImportFile] = useState(null);
 
+    // 設定関連の State
+    const [settings, setSettings] = useState({
+        lateLimitMinutes: 15,
+        dateResetTime: '04:00',
+        timeSlots: []
+    });
+    const [settingsLoading, setSettingsLoading] = useState(false);
+
+    const isAdminOrOwner = user?.role === 'admin' || user?.role === 'owner';
+
     useEffect(() => {
         fetchGroups();
+        if (isAdminOrOwner) {
+            fetchSettings();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         if (selectedGroup) {
             fetchTimetables();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedGroup]);
 
     const fetchGroups = async () => {
@@ -51,6 +67,24 @@ const TimetablePage = () => {
             setLoading(false);
         }
     };
+
+    const fetchSettings = useCallback(async () => {
+        setSettingsLoading(true);
+        try {
+            const response = await timetableApi.getOrganizationSettings();
+            if (response.success && response.data) {
+                setSettings({
+                    lateLimitMinutes: response.data.lateLimitMinutes || 15,
+                    dateResetTime: response.data.dateResetTime?.substring(0, 5) || '04:00',
+                    timeSlots: response.data.timeSlots || []
+                });
+            }
+        } catch (err) {
+            console.error('設定取得エラー:', err);
+        } finally {
+            setSettingsLoading(false);
+        }
+    }, []);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -89,6 +123,63 @@ const TimetablePage = () => {
         }
     };
 
+    // 設定保存
+    const handleSaveSettings = async () => {
+        setSettingsLoading(true);
+        setError(null);
+        try {
+            const response = await timetableApi.saveOrganizationSettings({
+                lateLimitMinutes: settings.lateLimitMinutes,
+                dateResetTime: settings.dateResetTime + ':00',
+                timeSlots: settings.timeSlots.map((slot, index) => ({
+                    periodNumber: index + 1,
+                    periodName: slot.periodName || `${index + 1}限`,
+                    startTime: slot.startTime,
+                    endTime: slot.endTime
+                }))
+            });
+            if (response.success) {
+                setSuccess('設定を保存しました');
+            } else {
+                setError(response.message || '設定の保存に失敗しました');
+            }
+        } catch (err) {
+            setError(err.message || '設定の保存に失敗しました');
+        } finally {
+            setSettingsLoading(false);
+        }
+    };
+
+    // 時限追加
+    const addTimeSlot = () => {
+        const lastSlot = settings.timeSlots[settings.timeSlots.length - 1];
+        const newSlot = {
+            periodName: `${settings.timeSlots.length + 1}限`,
+            startTime: lastSlot ? lastSlot.endTime : '09:00',
+            endTime: lastSlot ? addMinutes(lastSlot.endTime, 50) : '09:50'
+        };
+        setSettings({ ...settings, timeSlots: [...settings.timeSlots, newSlot] });
+    };
+
+    // 時限削除
+    const removeTimeSlot = (index) => {
+        const newSlots = settings.timeSlots.filter((_, i) => i !== index);
+        setSettings({ ...settings, timeSlots: newSlots });
+    };
+
+    // 時限更新
+    const updateTimeSlot = (index, field, value) => {
+        const newSlots = [...settings.timeSlots];
+        newSlots[index] = { ...newSlots[index], [field]: value };
+        setSettings({ ...settings, timeSlots: newSlots });
+    };
+
+    const addMinutes = (time, minutes) => {
+        const [h, m] = time.split(':').map(Number);
+        const date = new Date(2000, 0, 1, h, m + minutes);
+        return date.toTimeString().slice(0, 5);
+    };
+
     const formatTime = (time) => {
         if (!time) return '--:--';
         return time.substring(0, 5);
@@ -104,65 +195,174 @@ const TimetablePage = () => {
             <div className="timetable-container">
                 <div className="page-header">
                     <h1>時間割管理</h1>
-                    <p className="page-subtitle">クラスの時間割を管理します</p>
+                    <p className="page-subtitle">クラスの時間割と出欠設定を管理します</p>
                 </div>
+
+                {/* タブ切り替え */}
+                {isAdminOrOwner && (
+                    <div className="tabs">
+                        <button
+                            className={`tab ${activeTab === 'timetable' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('timetable')}
+                        >
+                            📅 時間割
+                        </button>
+                        <button
+                            className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('settings')}
+                        >
+                            ⚙️ 出欠設定
+                        </button>
+                    </div>
+                )}
 
                 {error && <div className="alert alert--error"><span>⚠️ {error}</span><button onClick={() => setError(null)}>×</button></div>}
                 {success && <div className="alert alert--success"><span>✓ {success}</span><button onClick={() => setSuccess(null)}>×</button></div>}
 
-                <div className="timetable-controls">
-                    <div className="group-selector">
-                        <label>グループ:</label>
-                        <select value={selectedGroup || ''} onChange={(e) => setSelectedGroup(Number(e.target.value))} className="form-select">
-                            {groups.map(group => (
-                                <option key={group.id} value={group.id}>{group.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    {user?.role === 'admin' && (
-                        <button className="btn btn--primary" onClick={() => setShowImportModal(true)}>
-                            📥 Excelインポート
-                        </button>
-                    )}
-                </div>
-
-                {loading ? (
-                    <div className="loading-state">読み込み中...</div>
-                ) : timetables.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-icon">📅</div>
-                        <p>時間割がありません</p>
-                        {user?.role === 'admin' && <p className="empty-hint">Excelファイルからインポートしてください</p>}
-                    </div>
-                ) : (
-                    <div className="timetable-grid">
-                        <div className="timetable-header">
-                            <div className="period-column">時限</div>
-                            {[1, 2, 3, 4, 5].map(day => (
-                                <div key={day} className="day-column">{getDayLabel(day)}</div>
-                            ))}
-                        </div>
-                        {Array.from({ length: 6 }, (_, i) => i + 1).map(period => (
-                            <div key={period} className="timetable-row">
-                                <div className="period-cell">{period}限</div>
-                                {[1, 2, 3, 4, 5].map(day => {
-                                    const session = timetables.find(t => t.day_of_week === day && t.period === period);
-                                    return (
-                                        <div key={`${day}-${period}`} className={`session-cell ${session ? 'has-session' : ''}`}>
-                                            {session ? (
-                                                <>
-                                                    <div className="session-subject">{session.subject}</div>
-                                                    <div className="session-time">{formatTime(session.start_time)} - {formatTime(session.end_time)}</div>
-                                                    {session.room && <div className="session-room">{session.room}</div>}
-                                                </>
-                                            ) : (
-                                                <div className="empty-session">-</div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                {/* 時間割タブ */}
+                {activeTab === 'timetable' && (
+                    <>
+                        <div className="timetable-controls">
+                            <div className="group-selector">
+                                <label>グループ:</label>
+                                <select value={selectedGroup || ''} onChange={(e) => setSelectedGroup(Number(e.target.value))} className="form-select">
+                                    {groups.map(group => (
+                                        <option key={group.id} value={group.id}>{group.name}</option>
+                                    ))}
+                                </select>
                             </div>
-                        ))}
+                            {user?.role === 'admin' && (
+                                <button className="btn btn--primary" onClick={() => setShowImportModal(true)}>
+                                    📥 Excelインポート
+                                </button>
+                            )}
+                        </div>
+
+                        {loading ? (
+                            <div className="loading-state">読み込み中...</div>
+                        ) : timetables.length === 0 ? (
+                            <div className="empty-state">
+                                <div className="empty-icon">📅</div>
+                                <p>時間割がありません</p>
+                                {user?.role === 'admin' && <p className="empty-hint">Excelファイルからインポートしてください</p>}
+                            </div>
+                        ) : (
+                            <div className="timetable-grid">
+                                <div className="timetable-header">
+                                    <div className="period-column">時限</div>
+                                    {[1, 2, 3, 4, 5].map(day => (
+                                        <div key={day} className="day-column">{getDayLabel(day)}</div>
+                                    ))}
+                                </div>
+                                {Array.from({ length: 6 }, (_, i) => i + 1).map(period => (
+                                    <div key={period} className="timetable-row">
+                                        <div className="period-cell">{period}限</div>
+                                        {[1, 2, 3, 4, 5].map(day => {
+                                            const session = timetables.find(t => t.day_of_week === day && t.period === period);
+                                            return (
+                                                <div key={`${day}-${period}`} className={`session-cell ${session ? 'has-session' : ''}`}>
+                                                    {session ? (
+                                                        <>
+                                                            <div className="session-subject">{session.subject}</div>
+                                                            <div className="session-time">{formatTime(session.start_time)} - {formatTime(session.end_time)}</div>
+                                                            {session.room && <div className="session-room">{session.room}</div>}
+                                                        </>
+                                                    ) : (
+                                                        <div className="empty-session">-</div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* 設定タブ */}
+                {activeTab === 'settings' && isAdminOrOwner && (
+                    <div className="settings-panel">
+                        <div className="settings-section">
+                            <h3>出欠判定設定</h3>
+                            <div className="settings-grid">
+                                <div className="form-group">
+                                    <label>遅刻許容時間（分）</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="60"
+                                        value={settings.lateLimitMinutes}
+                                        onChange={(e) => setSettings({ ...settings, lateLimitMinutes: Number(e.target.value) })}
+                                        className="form-input"
+                                    />
+                                    <small>授業開始時間から何分以内なら「出席」扱いにするか</small>
+                                </div>
+                                <div className="form-group">
+                                    <label>日付リセット時間</label>
+                                    <input
+                                        type="time"
+                                        value={settings.dateResetTime}
+                                        onChange={(e) => setSettings({ ...settings, dateResetTime: e.target.value })}
+                                        className="form-input"
+                                    />
+                                    <small>この時間より前は「前日の授業」として扱います</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="settings-section">
+                            <div className="section-header">
+                                <h3>時限設定</h3>
+                                <button className="btn btn--secondary btn--sm" onClick={addTimeSlot}>
+                                    ＋ 時限追加
+                                </button>
+                            </div>
+                            {settings.timeSlots.length === 0 ? (
+                                <div className="empty-hint">時限が設定されていません。「時限追加」をクリックして追加してください。</div>
+                            ) : (
+                                <div className="time-slots-list">
+                                    {settings.timeSlots.map((slot, index) => (
+                                        <div key={index} className="time-slot-item">
+                                            <div className="slot-number">{index + 1}限</div>
+                                            <input
+                                                type="text"
+                                                value={slot.periodName || ''}
+                                                onChange={(e) => updateTimeSlot(index, 'periodName', e.target.value)}
+                                                placeholder="名称"
+                                                className="form-input slot-name"
+                                            />
+                                            <input
+                                                type="time"
+                                                value={slot.startTime || ''}
+                                                onChange={(e) => updateTimeSlot(index, 'startTime', e.target.value)}
+                                                className="form-input slot-time"
+                                            />
+                                            <span>〜</span>
+                                            <input
+                                                type="time"
+                                                value={slot.endTime || ''}
+                                                onChange={(e) => updateTimeSlot(index, 'endTime', e.target.value)}
+                                                className="form-input slot-time"
+                                            />
+                                            <button className="btn btn--danger btn--sm" onClick={() => removeTimeSlot(index)}>
+                                                削除
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="settings-actions">
+                            <button
+                                className="btn btn--primary"
+                                onClick={handleSaveSettings}
+                                disabled={settingsLoading}
+                            >
+                                {settingsLoading ? '保存中...' : '設定を保存'}
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

@@ -216,7 +216,29 @@ export const timetableApi = {
             academicYear,
             semester
         });
+    },
+
+    // ========================================
+    // 組織設定関連API
+    // ========================================
+
+    /**
+     * 組織の時間割設定を取得
+     * @returns {Promise} 設定情報
+     */
+    getOrganizationSettings: async () => {
+        return apiClient.get('/timetables/settings');
+    },
+
+    /**
+     * 組織の時間割設定を保存
+     * @param {Object} settings - 設定データ
+     * @returns {Promise} 保存結果
+     */
+    saveOrganizationSettings: async (settings) => {
+        return apiClient.post('/timetables/settings', settings);
     }
 };
 
 export default timetableApi;
+

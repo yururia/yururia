@@ -28,6 +28,7 @@
     opacity: 0;
     transform: translateY(-20px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -206,33 +207,84 @@
   justify-content: center;
 }
 
+/* 遅刻結果表示 */
+.late-result {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.late-result h3 {
+  color: #d97706;
+  font-size: 1.5rem;
+}
+
+.late-icon {
+  font-size: 4rem;
+  color: #f59e0b;
+}
+
+.late-actions {
+  margin-top: 16px;
+}
+
+.late-hint {
+  color: #92400e;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+/* 成功結果表示 */
+.success-result {
+  background: #d1fae5;
+  border: 1px solid #10b981;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.success-result h3 {
+  color: #059669;
+}
+
+.success-icon {
+  font-size: 4rem;
+  color: #10b981;
+}
+
+.scan-result-date {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 8px;
+}
+
 /* レスポンシブデザイン */
 @media (max-width: 640px) {
   .student-qr-scanner-modal {
     width: 95%;
     margin: 20px;
   }
-  
+
   .student-qr-scanner-header {
     padding: 16px 20px;
   }
-  
+
   .student-qr-scanner-content {
     padding: 20px;
   }
-  
+
   .scanner-start {
     padding: 16px;
   }
-  
+
   .scanner-icon {
     font-size: 2.5rem;
   }
-  
+
   .scan-result-actions {
     flex-direction: column;
   }
-  
+
   .scanner-tips {
     padding: 12px;
   }
@@ -244,69 +296,69 @@
     background: #1f2937;
     color: #f9fafb;
   }
-  
+
   .student-qr-scanner-header {
     background: #111827;
     border-bottom-color: #374151;
   }
-  
+
   .student-qr-scanner-header h2 {
     color: #f9fafb;
   }
-  
+
   .close-button {
     color: #9ca3af;
   }
-  
+
   .close-button:hover {
     background-color: #374151;
     color: #f3f4f6;
   }
-  
+
   .error-message {
     background-color: #1f2937;
     border-color: #dc2626;
     color: #fca5a5;
   }
-  
+
   .retry-button {
     color: #fca5a5;
   }
-  
+
   .retry-button:hover {
     color: #f87171;
   }
-  
+
   .scanner-instructions p,
   .scanner-start p {
     color: #9ca3af;
   }
-  
+
   .scanner-start h3 {
     color: #f9fafb;
   }
-  
+
   .scanner-tips {
     background: #111827;
   }
-  
+
   .scanner-tips h4 {
     color: #f9fafb;
   }
-  
+
   .scanner-tips li {
     color: #9ca3af;
   }
-  
+
   .scan-result h3 {
     color: #10b981;
   }
-  
+
   .scan-result-info {
     background: #064e3b;
     border-color: #065f46;
   }
-  
+
   .scan-result-info p {
     color: #a7f3d0;
   }

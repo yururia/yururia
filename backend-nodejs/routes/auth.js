@@ -274,7 +274,12 @@ router.put('/profile', authenticate, [
     .optional()
     .trim()
     .isLength({ max: 100 })
-    .withMessage('部署名は100文字以下で入力してください')
+    .withMessage('部署名は100文字以下で入力してください'),
+  body('student_id')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 255 })
+    .withMessage('学生IDは1文字以上255文字以下で入力してください')
 ], async (req, res) => {
   try {
     // バリデーションエラーのチェック

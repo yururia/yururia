@@ -19,12 +19,6 @@ const StudentPage = React.memo(() => {
     card_id: ''
   });
 
-  useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
-      loadStudents();
-    }
-  }, [isAuthenticated, user, loadStudents]);
-
   const loadStudents = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -43,6 +37,12 @@ const StudentPage = React.memo(() => {
       setIsLoading(false);
     }
   }, [searchTerm]);
+
+  useEffect(() => {
+    if (isAuthenticated && (user?.role === 'admin' || user?.role === 'owner')) {
+      loadStudents();
+    }
+  }, [isAuthenticated, user, loadStudents]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -135,7 +135,7 @@ const StudentPage = React.memo(() => {
     setFormData({ student_id: '', name: '', card_id: '' });
   };
 
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated || (user?.role !== 'admin' && user?.role !== 'owner')) {
     return (
       <div className="student-page">
         <div className="access-denied">

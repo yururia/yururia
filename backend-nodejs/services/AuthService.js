@@ -317,57 +317,169 @@ class AuthService {
    * ユーザー情報更新
    */
   static async updateProfile(userId, updateData) {
+    logger.info('=== プロフィール更新開始 ===', { userId, updateData });
+
     try {
-      const allowedFields = ['name', 'email'];
+      const allowedFields = ['name', 'email', 'department', 'student_id'];
       const updateFields = [];
       const updateValues = [];
+
+      logger.info('許可フィールドチェック中', { allowedFields, receivedFields: Object.keys(updateData) });
 
       for (const field of allowedFields) {
         if (updateData[field] !== undefined) {
           updateFields.push(`${field} = ?`);
           updateValues.push(updateData[field]);
+          logger.info(`フィールド追加: ${field}`, { value: updateData[field] });
         }
       }
 
       if (updateFields.length === 0) {
+        logger.warn('更新データなし', { userId, updateData });
         return {
           success: false,
           message: '更新するデータがありません'
         };
       }
 
+      logger.info('更新フィールド確定', { updateFields, updateValues });
+
+      // メールアドレスの重複チェック
       if (updateData.email) {
+        logger.info('メールアドレス重複チェック', { email: updateData.email });
         const existingEmail = await query(
           'SELECT id FROM users WHERE email = ? AND id != ?',
           [updateData.email, userId]
         );
 
         if (existingEmail.length > 0) {
+          logger.warn('メールアドレス重複', { email: updateData.email, existingUserId: existingEmail[0].id });
           return {
             success: false,
             message: 'このメールアドレスは既に使用されています'
           };
         }
+        logger.info('メールアドレス重複なし');
+      }
+
+      // 学生IDの変更がある場合、重複チェックと整合性確認
+      if (updateData.student_id) {
+        logger.info('学生ID更新処理開始', { newStudentId: updateData.student_id });
+
+        // 現在のユーザー情報を取得
+        const currentUser = await query(
+          'SELECT student_id, role FROM users WHERE id = ?',
+          [userId]
+        );
+
+        if (currentUser.length === 0) {
+          logger.error('ユーザーが見つからない', { userId });
+          return { success: false, message: 'ユーザーが見つかりません' };
+        }
+
+        const oldStudentId = currentUser[0].student_id;
+        const userRole = currentUser[0].role;
+        logger.info('現在のユーザー情報', { oldStudentId, userRole });
+
+        // 学生ロールの場合のみ学生IDを更新可能
+        if (userRole !== 'student') {
+          logger.warn('学生ロール以外で学生ID変更試行', { userId, userRole });
+          return {
+            success: false,
+            message: '学生IDは学生ロールのユーザーのみが設定・変更できます'
+          };
+        }
+
+        // 新しい学生IDが他のユーザーに使われていないかチェック
+        logger.info('学生ID重複チェック', { studentId: updateData.student_id });
+        const existingStudentId = await query(
+          'SELECT id FROM users WHERE student_id = ? AND id != ?',
+          [updateData.student_id, userId]
+        );
+
+        if (existingStudentId.length > 0) {
+          logger.warn('学生ID重複', { studentId: updateData.student_id, existingUserId: existingStudentId[0].id });
+          return {
+            success: false,
+            message: 'この学生IDは既に使用されています'
+          };
+        }
+        logger.info('学生ID重複なし');
+
+        // studentsテーブルにレコードがあるか確認
+        const existingStudent = await query(
+          'SELECT student_id FROM students WHERE student_id = ?',
+          [updateData.student_id]
+        );
+        logger.info('studentsテーブルチェック', { exists: existingStudent.length > 0 });
+
+        // studentsテーブルに新しいIDのレコードがなければ作成
+        if (existingStudent.length === 0) {
+          // 古いstudent_idのレコードを更新するか、新規作成するか判断
+          if (oldStudentId) {
+            // 古いIDのレコードがあれば更新
+            const oldStudent = await query(
+              'SELECT student_id FROM students WHERE student_id = ?',
+              [oldStudentId]
+            );
+            if (oldStudent.length > 0) {
+              // 古いレコードの学生IDを更新
+              await query(
+                'UPDATE students SET student_id = ?, updated_at = CURRENT_TIMESTAMP WHERE student_id = ?',
+                [updateData.student_id, oldStudentId]
+              );
+              logger.info('studentsテーブルの学生ID更新', { oldStudentId, newStudentId: updateData.student_id });
+            } else {
+              // 古いレコードがなければ新規作成
+              const userInfo = await query(
+                'SELECT name FROM users WHERE id = ?',
+                [userId]
+              );
+              await query(
+                'INSERT INTO students (student_id, name, status, created_at) VALUES (?, ?, ?, NOW())',
+                [updateData.student_id, userInfo[0].name, 'active']
+              );
+              logger.info('studentsテーブルに新規レコード作成', { studentId: updateData.student_id });
+            }
+          } else {
+            // 古いIDがなければ新規作成
+            const userInfo = await query(
+              'SELECT name FROM users WHERE id = ?',
+              [userId]
+            );
+            await query(
+              'INSERT INTO students (student_id, name, status, created_at) VALUES (?, ?, ?, NOW())',
+              [updateData.student_id, userInfo[0].name, 'active']
+            );
+            logger.info('studentsテーブルに新規レコード作成', { studentId: updateData.student_id });
+          }
+        }
       }
 
       updateValues.push(userId);
 
-      await query(
-        `UPDATE users SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        updateValues
-      );
+      const updateQuery = `UPDATE users SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+      logger.info('SQL実行', { query: updateQuery, values: updateValues });
 
-      logger.info('プロフィール更新成功', { userId });
+      await query(updateQuery, updateValues);
+
+      logger.info('=== プロフィール更新完了 ===', { userId, updatedFields: updateFields });
 
       return {
         success: true,
         message: 'プロフィールが更新されました'
       };
     } catch (error) {
-      logger.error('プロフィール更新エラー:', error.message);
+      logger.error('=== プロフィール更新エラー ===', {
+        userId,
+        updateData,
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorStack: error.stack
+      });
       return {
         success: false,
-        message: 'サーバーエラーが発生しました'
+        message: `サーバーエラー: ${error.message}`
       };
     }
   }

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import './StudentQRScanner.css';
 
 const StudentQRScanner = ({ onScan, onClose, isOpen, scanResult, onSelectClass }) => {
   const [error, setError] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
+  const navigate = useNavigate();
 
   const handleScan = (detectedCodes) => {
     if (detectedCodes && detectedCodes.length > 0) {
@@ -18,7 +20,7 @@ const StudentQRScanner = ({ onScan, onClose, isOpen, scanResult, onSelectClass }
         // 開発環境でのみエラーログ出力
         if (process.env.NODE_ENV === 'development') {
           // eslint-disable-next-line no-console
-        console.error('QR解析エラー:', err);
+          console.error('QR解析エラー:', err);
         }
       }
     }
@@ -28,7 +30,7 @@ const StudentQRScanner = ({ onScan, onClose, isOpen, scanResult, onSelectClass }
     // 開発環境でのみエラーログ出力
     if (process.env.NODE_ENV === 'development') {
       // eslint-disable-next-line no-console
-    console.error('QRスキャナーエラー:', error);
+      console.error('QRスキャナーエラー:', error);
     }
     setError('カメラへのアクセスに失敗しました。カメラの許可を確認してください。');
   };
@@ -46,6 +48,14 @@ const StudentQRScanner = ({ onScan, onClose, isOpen, scanResult, onSelectClass }
     setError(null);
   };
 
+  // 遅刻届を出す
+  const handleLateRequest = () => {
+    const classId = scanResult?.classId || '';
+    const date = scanResult?.logicalDate || new Date().toISOString().split('T')[0];
+    onClose();
+    navigate(`/absence-request?type=late&classId=${classId}&date=${date}`);
+  };
+
   if (!isOpen) {
     return null;
   }
@@ -55,20 +65,20 @@ const StudentQRScanner = ({ onScan, onClose, isOpen, scanResult, onSelectClass }
       <div className="student-qr-scanner-modal">
         <div className="student-qr-scanner-header">
           <h2>QRコードスキャン</h2>
-          <button 
-            className="close-button" 
+          <button
+            className="close-button"
             onClick={onClose}
             aria-label="閉じる"
           >
             ×
           </button>
         </div>
-        
+
         <div className="student-qr-scanner-content">
           {error && (
             <div className="error-message">
               {error}
-              <button 
+              <button
                 className="retry-button"
                 onClick={handleStartScan}
               >
@@ -76,8 +86,34 @@ const StudentQRScanner = ({ onScan, onClose, isOpen, scanResult, onSelectClass }
               </button>
             </div>
           )}
-          
-                    {scanResult?.requiresSelection && scanResult.classes && (
+
+          {/* 遅刻判定の結果表示 */}
+          {scanResult?.status === 'late' && (
+            <div className="scan-result late-result">
+              <div className="scan-result-icon late-icon">⏰</div>
+              <h3>遅刻です</h3>
+              <p className="scan-result-message">{scanResult.message}</p>
+              <div className="late-actions">
+                <p className="late-hint">遅刻届を提出しますか？</p>
+                <div className="scan-result-actions">
+                  <button
+                    className="btn btn--secondary"
+                    onClick={onClose}
+                  >
+                    閉じる
+                  </button>
+                  <button
+                    className="btn btn--primary"
+                    onClick={handleLateRequest}
+                  >
+                    遅刻届を出す
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {scanResult?.requiresSelection && scanResult.classes && (
             <div className="scan-result">
               <div className="scan-result-icon">📚</div>
               <h3>授業を選択してください</h3>
@@ -112,11 +148,15 @@ const StudentQRScanner = ({ onScan, onClose, isOpen, scanResult, onSelectClass }
             </div>
           )}
 
-          {scanResult && !scanResult.requiresSelection && (
-            <div className="scan-result">
-              <div className="scan-result-icon">✓</div>
-              <h3>スキャン完了</h3>
+          {/* 通常の出席完了表示 */}
+          {scanResult && !scanResult.requiresSelection && scanResult.status !== 'late' && (
+            <div className="scan-result success-result">
+              <div className="scan-result-icon success-icon">✓</div>
+              <h3>出席完了</h3>
               <p className="scan-result-message">{scanResult.message || 'QRコードをスキャンしました'}</p>
+              {scanResult.logicalDate && (
+                <p className="scan-result-date">{scanResult.logicalDate}</p>
+              )}
             </div>
           )}
 
@@ -131,7 +171,7 @@ const StudentQRScanner = ({ onScan, onClose, isOpen, scanResult, onSelectClass }
               />
               <div className="scanner-instructions">
                 <p>学校のQRコードをカメラの中央に合わせてください</p>
-                <button 
+                <button
                   className="btn btn--secondary"
                   onClick={handleStopScan}
                 >
@@ -139,7 +179,7 @@ const StudentQRScanner = ({ onScan, onClose, isOpen, scanResult, onSelectClass }
                 </button>
               </div>
             </div>
-          ) : (
+          ) : !scanResult && (
             <div className="scanner-start">
               <div className="scanner-icon">📱</div>
               <h3>QRコードスキャン</h3>
@@ -153,7 +193,7 @@ const StudentQRScanner = ({ onScan, onClose, isOpen, scanResult, onSelectClass }
                   <li>カメラを安定させる</li>
                 </ul>
               </div>
-              <button 
+              <button
                 className="btn btn--primary"
                 onClick={handleStartScan}
               >
@@ -168,4 +208,3 @@ const StudentQRScanner = ({ onScan, onClose, isOpen, scanResult, onSelectClass }
 };
 
 export default StudentQRScanner;
-

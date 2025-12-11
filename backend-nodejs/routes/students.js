@@ -111,7 +111,7 @@ router.get('/', authenticate, [
     }
 
     const { search, limit, offset = 0 } = req.query;
-    const result = await StudentService.getStudents(search, limit, offset);
+    const result = await StudentService.getStudents({ search, limit, offset });
 
     res.json(result);
   } catch (error) {

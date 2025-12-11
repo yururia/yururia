@@ -305,4 +305,71 @@ router.put('/sessions/:sessionId/cancel', async (req, res) => {
     }
 });
 
+// ========================================
+// 組織設定関連エンドポイント
+// ========================================
+
+/**
+ * GET /api/timetables/settings
+ * 組織の時間割設定を取得
+ */
+router.get('/settings', async (req, res) => {
+    try {
+        const organizationId = req.user.organization_id;
+
+        if (!organizationId) {
+            return res.status(400).json({
+                success: false,
+                message: '組織情報が見つかりません'
+            });
+        }
+
+        const result = await TimetableService.getOrganizationSettings(organizationId);
+        res.json(result);
+    } catch (error) {
+        console.error('組織設定取得エラー:', error);
+        res.status(500).json({
+            success: false,
+            message: '設定の取得に失敗しました',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/timetables/settings
+ * 組織の時間割設定を保存
+ */
+router.post('/settings', async (req, res) => {
+    try {
+        // 管理者またはオーナーのみ
+        if (req.user.role !== 'admin' && req.user.role !== 'owner') {
+            return res.status(403).json({
+                success: false,
+                message: '管理者のみ設定を変更できます'
+            });
+        }
+
+        const organizationId = req.user.organization_id;
+
+        if (!organizationId) {
+            return res.status(400).json({
+                success: false,
+                message: '組織情報が見つかりません'
+            });
+        }
+
+        const result = await TimetableService.saveOrganizationSettings(organizationId, req.body);
+        res.json(result);
+    } catch (error) {
+        console.error('組織設定保存エラー:', error);
+        res.status(500).json({
+            success: false,
+            message: '設定の保存に失敗しました',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
+

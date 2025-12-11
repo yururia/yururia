@@ -37,7 +37,7 @@ const Input = ({
         required={required}
         className={`input ${error ? 'input--error' : ''}`}
         animate={error ? { x: [0, -10, 10, -10, 10, 0] } : { x: 0 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+        transition={error ? { type: 'tween', duration: 0.4 } : { type: 'spring', stiffness: 500, damping: 20 }}
         whileFocus={{ scale: 1.01, borderColor: '#3b82f6', boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)' }}
         {...props}
       />

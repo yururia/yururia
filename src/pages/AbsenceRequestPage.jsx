@@ -1,26 +1,56 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { absenceRequestApi } from '../api';
 import useAuthStore from '../stores/authStore';
 import './AbsenceRequestPage.css';
 
 /**
  * 欠席申請ページ（学生用）
+ * URLパラメータ対応: ?type=late&classId=xxx&date=YYYY-MM-DD
  */
 const AbsenceRequestPage = () => {
     const user = useAuthStore(state => state.user);
+    const [searchParams] = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
     const [myRequests, setMyRequests] = useState([]);
     const [showForm, setShowForm] = useState(false);
 
+    // URLパラメータから初期値を取得
+    const urlType = searchParams.get('type');
+    const urlDate = searchParams.get('date');
+    const urlClassId = searchParams.get('classId');
+
     // フォームデータ
     const [formData, setFormData] = useState({
         requestType: 'absence',
         requestDate: '',
         reason: '',
-        attachment: null
+        attachment: null,
+        classId: ''
     });
+
+    // URLパラメータがある場合、フォームを自動で開いて初期値を設定
+    useEffect(() => {
+        if (urlType || urlDate) {
+            // 遅刻（late）の場合は official_late に変換
+            let requestType = 'absence';
+            if (urlType === 'late') {
+                requestType = 'official_late';
+            } else if (urlType === 'absence' || urlType === 'official_absence' || urlType === 'early_departure') {
+                requestType = urlType;
+            }
+
+            setFormData(prev => ({
+                ...prev,
+                requestType,
+                requestDate: urlDate || '',
+                classId: urlClassId || ''
+            }));
+            setShowForm(true);
+        }
+    }, [urlType, urlDate, urlClassId]);
 
     useEffect(() => {
         if (user?.student_id) {

@@ -70,20 +70,41 @@ class UserService {
    * ユーザー情報の更新
    */
   static async updateUser(userId, updateData) {
+    logger.info('=== UserService.updateUser開始 ===', { userId, updateData });
+
     try {
       const result = await transaction(async (conn) => {
-        const allowedFields = ['name', 'email', 'phone'];
+        // Note: departmentはDBにカラムがない可能性があるため除外
+        const allowedFields = ['name', 'email', 'student_id'];
         const updateFields = [];
         const updateValues = [];
 
+        logger.info('許可フィールド', { allowedFields, receivedFields: Object.keys(updateData) });
+
         if (updateData.email) {
+          logger.info('メールアドレス重複チェック', { email: updateData.email });
           const existingEmail = await query(
             'SELECT id FROM users WHERE email = ? AND id != ?',
             [updateData.email, userId]
           );
 
           if (existingEmail.length > 0) {
+            logger.warn('メールアドレス重複', { email: updateData.email });
             throw new Error('このメールアドレスは既に使用されています');
+          }
+        }
+
+        // student_idの重複チェック
+        if (updateData.student_id) {
+          logger.info('学生ID重複チェック', { student_id: updateData.student_id });
+          const existingStudentId = await query(
+            'SELECT id FROM users WHERE student_id = ? AND id != ?',
+            [updateData.student_id, userId]
+          );
+
+          if (existingStudentId.length > 0) {
+            logger.warn('学生ID重複', { student_id: updateData.student_id });
+            throw new Error('この学生IDは既に使用されています');
           }
         }
 
@@ -91,28 +112,35 @@ class UserService {
           if (updateData[field] !== undefined) {
             updateFields.push(`${field} = ?`);
             updateValues.push(updateData[field]);
+            logger.info(`フィールド追加: ${field}`, { value: updateData[field] });
           }
         }
 
         if (updateFields.length === 0) {
+          logger.warn('更新データなし', { userId, updateData });
           return { success: false, message: '更新するデータがありません' };
         }
 
         updateFields.push('updated_at = CURRENT_TIMESTAMP');
         updateValues.push(userId);
 
-        await conn.execute(
-          `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`,
-          updateValues
-        );
+        const updateQuery = `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`;
+        logger.info('SQL実行', { query: updateQuery, values: updateValues });
 
+        await conn.execute(updateQuery, updateValues);
+
+        logger.info('=== UserService.updateUser完了 ===', { userId, updatedFields: updateFields });
         return { success: true, message: 'ユーザー情報が更新されました' };
       });
 
-      logger.info('ユーザー情報更新成功', { userId });
       return result;
     } catch (error) {
-      logger.error('ユーザー情報更新エラー:', error.message);
+      logger.error('=== UserService.updateUserエラー ===', {
+        userId,
+        updateData,
+        errorMessage: error.message,
+        errorStack: error.stack
+      });
       return {
         success: false,
         message: error.message || 'ユーザー情報の更新に失敗しました'

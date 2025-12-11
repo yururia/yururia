@@ -71,6 +71,10 @@ try {
 
   // --- セキュリティとミドルウェア ---
   app.use(helmet());
+
+  // プロキシ経由のリクエストを信頼（X-Forwarded-For対応）
+  app.set('trust proxy', 1);
+
   app.use(cors({
     origin: [
       'http://localhost:3000',
@@ -91,6 +95,7 @@ try {
     message: { success: false, message: 'リクエストが多すぎます。15分後に再試行してください。' },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false } // 検証を無効化
   });
   app.use('/api/', apiLimiter);
 

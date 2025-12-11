@@ -397,6 +397,127 @@ class TimetableService {
             throw error;
         }
     }
+
+    // ========================================
+    // 組織設定関連メソッド（新規追加）
+    // ========================================
+
+    /**
+     * 組織の時間割設定を取得
+     * @param {number} organizationId - 組織ID
+     * @returns {Promise<Object>} 設定情報
+     */
+    static async getOrganizationSettings(organizationId) {
+        try {
+            // 組織の基本設定を取得
+            const orgSql = `
+                SELECT id, name, late_limit_minutes, date_reset_time
+                FROM organizations
+                WHERE id = ?
+            `;
+            const orgs = await query(orgSql, [organizationId]);
+
+            if (orgs.length === 0) {
+                throw new Error('組織が見つかりません');
+            }
+
+            // 時限設定を取得
+            const slotsSql = `
+                SELECT id, period_number, period_name, start_time, end_time
+                FROM organization_time_slots
+                WHERE organization_id = ?
+                ORDER BY period_number
+            `;
+            const timeSlots = await query(slotsSql, [organizationId]);
+
+            return {
+                success: true,
+                data: {
+                    organization: orgs[0],
+                    lateLimitMinutes: orgs[0].late_limit_minutes || 15,
+                    dateResetTime: orgs[0].date_reset_time || '04:00:00',
+                    timeSlots: timeSlots
+                }
+            };
+        } catch (error) {
+            logger.error('組織設定取得エラー:', error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * 組織の時間割設定を保存
+     * @param {number} organizationId - 組織ID
+     * @param {Object} settings - 設定データ
+     * @returns {Promise<Object>} 保存結果
+     */
+    static async saveOrganizationSettings(organizationId, settings) {
+        try {
+            const { lateLimitMinutes, dateResetTime, timeSlots } = settings;
+
+            // 組織設定を更新
+            const updateOrgSql = `
+                UPDATE organizations
+                SET late_limit_minutes = ?, date_reset_time = ?, updated_at = NOW()
+                WHERE id = ?
+            `;
+            await query(updateOrgSql, [
+                lateLimitMinutes || 15,
+                dateResetTime || '04:00:00',
+                organizationId
+            ]);
+
+            // 時限設定を更新（一度削除して再作成）
+            if (timeSlots && Array.isArray(timeSlots)) {
+                await query('DELETE FROM organization_time_slots WHERE organization_id = ?', [organizationId]);
+
+                for (const slot of timeSlots) {
+                    const insertSql = `
+                        INSERT INTO organization_time_slots 
+                        (organization_id, period_number, period_name, start_time, end_time)
+                        VALUES (?, ?, ?, ?, ?)
+                    `;
+                    await query(insertSql, [
+                        organizationId,
+                        slot.periodNumber,
+                        slot.periodName || `${slot.periodNumber}限`,
+                        slot.startTime,
+                        slot.endTime
+                    ]);
+                }
+            }
+
+            logger.info('組織設定保存成功', { organizationId });
+            return { success: true, message: '設定を保存しました' };
+        } catch (error) {
+            logger.error('組織設定保存エラー:', error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * 指定時刻に対応する時限を取得
+     * @param {number} organizationId - 組織ID
+     * @param {string} time - 時刻 (HH:MM:SS)
+     * @returns {Promise<Object|null>} 時限情報
+     */
+    static async getTimeSlotByTime(organizationId, time) {
+        try {
+            const sql = `
+                SELECT id, period_number, period_name, start_time, end_time
+                FROM organization_time_slots
+                WHERE organization_id = ?
+                  AND start_time <= ? AND end_time >= ?
+                LIMIT 1
+            `;
+            const results = await query(sql, [organizationId, time, time]);
+            return results.length > 0 ? results[0] : null;
+        } catch (error) {
+            logger.error('時限検索エラー:', error);
+            return null;
+        }
+    }
 }
 
 module.exports = TimetableService;
+

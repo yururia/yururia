@@ -17,19 +17,26 @@ const StudentDashboardPage = () => {
   const [classSelectionData, setClassSelectionData] = useState(null);
 
   useEffect(() => {
-    if (isAuthenticated && user?.studentId) {
-      loadStudentData();
+    if (isAuthenticated) {
+      if (user?.student_id) {
+        loadStudentData();
+      } else {
+        // student_idがない場合（管理者プレビューモードなど）
+        // ダミーデータまたは空のデータを設定してローディングを終了
+        console.log('[StudentDashboard] No student_id, showing preview mode');
+        setIsLoading(false);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, user?.studentId]);
+  }, [isAuthenticated, user?.student_id]);
 
   const loadStudentData = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // 管理者プレビューモードの場合（studentIdがない場合）
-      if (!user.studentId) {
+      // 管理者プレビューモードの場合（student_idがない場合）
+      if (!user.student_id) {
         // ダミーデータをセットして終了
         setGroups([
           {
@@ -63,14 +70,14 @@ const StudentDashboardPage = () => {
       }
 
       // 学生のグループ一覧を取得
-      const response = await attendanceApi.getStudentGroups(user.studentId);
+      const response = await attendanceApi.getStudentGroups(user.student_id);
 
       if (response.success) {
         const studentGroups = response.data.groups;
 
         // グループごとのステータスを判定（バックエンドがstatusを直接返さない場合、membersから判定）
         const groupsWithStatus = studentGroups.map(group => {
-          const myMemberInfo = group.members?.find(m => m.student_id === user.studentId);
+          const myMemberInfo = group.members?.find(m => m.student_id === user.student_id);
           return {
             ...group,
             status: myMemberInfo ? myMemberInfo.status : group.status
@@ -223,7 +230,7 @@ const StudentDashboardPage = () => {
     <div className="student-dashboard-page">
       <div className="student-dashboard-container">
         <div className="dashboard-header">
-          {!user?.studentId && (
+          {!user?.student_id && (
             <div style={{
               backgroundColor: '#fff3cd',
               color: '#856404',
@@ -242,7 +249,7 @@ const StudentDashboardPage = () => {
           <h1>学生ダッシュボード</h1>
           <div className="student-info">
             <p>ようこそ、{user?.name || '学生'}さん</p>
-            <p>学生ID: {user?.studentId || 'PREVIEW'}</p>
+            <p>学生ID: {user?.student_id || 'PREVIEW'}</p>
           </div>
         </div>
 

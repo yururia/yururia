@@ -158,7 +158,10 @@ const Header = () => {
                 <NavLink to="/dashboard" className={getLinkClass}>ダッシュボード</NavLink>
                 <NavLink to="/chat" className={getLinkClass}>チャット</NavLink>
                 {currentRole === 'student' && (
-                  <NavLink to="/events" className={getLinkClass}>イベント一覧</NavLink>
+                  <>
+                    <NavLink to="/student-dashboard" className={getLinkClass}>📱 QRスキャン</NavLink>
+                    <NavLink to="/events" className={getLinkClass}>イベント一覧</NavLink>
+                  </>
                 )}
               </div>
             )}
@@ -276,6 +279,10 @@ const Header = () => {
                   {/* 学生用リンク */}
                   {currentRole === 'student' && (
                     <div className="mobile-nav-section">
+                      <div className="mobile-nav-section-title">学生メニュー</div>
+                      <NavLink to="/student-dashboard" className={getMobileLinkClass} onClick={closeMobileMenu}>
+                        📱 QRコードスキャン
+                      </NavLink>
                       <NavLink to="/events" className={getMobileLinkClass} onClick={closeMobileMenu}>
                         イベント一覧
                       </NavLink>

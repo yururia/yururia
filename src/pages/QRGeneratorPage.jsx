@@ -28,6 +28,17 @@ const QRGeneratorPage = () => {
     expiresAt: '',
   });
 
+  // 学生はアクセス不可
+  const allowedRoles = ['owner', 'admin', 'teacher', 'employee'];
+  const canAccess = allowedRoles.includes(user?.role);
+
+  // 権限チェック - 最初にレンダリング前にチェック
+  useEffect(() => {
+    if (user && !canAccess) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, canAccess, navigate]);
+
   // QRコード履歴取得（改善版）
   const fetchQRHistory = useCallback(async () => {
     setHistoryLoading(true);
@@ -54,14 +65,11 @@ const QRGeneratorPage = () => {
   }, []);
 
   useEffect(() => {
-    // 管理者以外はリダイレクト
-    if (user && user.role !== 'admin') {
-      navigate('/dashboard');
+    // 権限がある場合のみQRコード履歴を取得
+    if (canAccess) {
+      fetchQRHistory();
     }
-
-    // QRコード履歴を取得
-    fetchQRHistory();
-  }, [user, navigate, fetchQRHistory]);
+  }, [canAccess, fetchQRHistory]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
