@@ -54,3 +54,38 @@
     align-items: center;
     gap: 5px;
 }
+
+.qr-loading,
+.qr-error {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.qr-loading p {
+    color: #6b7280;
+    font-size: 16px;
+}
+
+.qr-error p {
+    color: #991b1b;
+    margin: 0 0 12px 0;
+}
+
+.qr-placeholder {
+    padding: 40px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    text-align: center;
+    color: #6b7280;
+}
+
+.qr-code-fallback {
+    margin-top: 12px;
+}
+
+.qr-code-fallback code {
+    font-family: monospace;
+    background: #f3f4f6;
+    padding: 4px 8px;
+    border-radius: 4px;
+}

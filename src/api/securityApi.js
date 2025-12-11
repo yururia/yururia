@@ -160,7 +160,7 @@ export const securityApi = {
      * @returns {Promise} 無効化結果
      */
     deactivateQRCode: async (id) => {
-        return apiClient.put(`/qr/codes/${id}/deactivate`);
+        return apiClient.put(`/qr/${id}/deactivate`);
     },
 
     /**
@@ -169,7 +169,7 @@ export const securityApi = {
      * @returns {Promise} 削除結果
      */
     deleteQRCode: async (id) => {
-        return apiClient.delete(`/qr/codes/${id}`);
+        return apiClient.delete(`/qr/${id}`);
     },
 
     /**

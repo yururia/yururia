@@ -9,6 +9,7 @@ const QRManagement = () => {
     const [error, setError] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [generatedQR, setGeneratedQR] = useState(null);
+    const [viewingQR, setViewingQR] = useState(null); // 表示用State
 
     // Form state
     const [formData, setFormData] = useState({
@@ -85,6 +86,11 @@ const QRManagement = () => {
         }
     };
 
+    // 表示ボタンクリック時
+    const handleView = (qr) => {
+        setViewingQR(qr);
+    };
+
     return (
         <div className="qr-management">
             <div className="section-header">
@@ -104,10 +110,27 @@ const QRManagement = () => {
                 <div className="modal-overlay">
                     <div className="modal-content">
                         <QRGenerator
-                            qrImage={generatedQR.qrImage}
-                            locationName={generatedQR.locationName}
-                            description={generatedQR.locationDescription}
+                            qrImage={generatedQR.qr_image}
+                            qrCode={generatedQR.qr_code || generatedQR.code}
+                            locationName={generatedQR.location_name || generatedQR.locationName}
+                            description={generatedQR.description || generatedQR.location_description}
                             onClose={() => setGeneratedQR(null)}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* QRコード表示モーダル */}
+            {viewingQR && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <QRGenerator
+                            qrImage={viewingQR.qr_image}
+                            qrCode={viewingQR.code}
+                            locationName={viewingQR.location_name}
+                            description={viewingQR.location_description}
+                            expiresAt={viewingQR.expires_at}
+                            onClose={() => setViewingQR(null)}
                         />
                     </div>
                 </div>
@@ -190,6 +213,12 @@ const QRManagement = () => {
                                     <td>{new Date(qr.created_at).toLocaleDateString()}</td>
                                     <td>
                                         <div className="action-buttons">
+                                            <button
+                                                className="btn btn--sm btn--view"
+                                                onClick={() => handleView(qr)}
+                                            >
+                                                表示
+                                            </button>
                                             {qr.is_active && (
                                                 <button
                                                     className="btn btn--sm btn--warning"
@@ -217,3 +246,4 @@ const QRManagement = () => {
 };
 
 export default QRManagement;
+

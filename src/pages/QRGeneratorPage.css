@@ -412,8 +412,179 @@
         gap: 12px;
     }
 
-    .qr-history-status {
+    .qr-history-actions {
         width: 100%;
         justify-content: space-between;
+    }
+}
+
+/* 履歴アクションボタン */
+.qr-history-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btn--view {
+    background: #8b5cf6;
+    color: white;
+    min-height: 44px;
+    min-width: 80px;
+}
+
+.btn--view:hover:not(:disabled) {
+    background: #7c3aed;
+}
+
+/* ローディング状態 */
+.loading-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #6b7280;
+}
+
+.loading-state p {
+    font-size: 16px;
+    margin: 0;
+}
+
+/* QRモーダル */
+.qr-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.qr-modal {
+    background: white;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.qr-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.qr-modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.qr-modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.qr-modal-close:hover {
+    background: #f3f4f6;
+    color: #1a1a1a;
+}
+
+.qr-modal-content {
+    padding: 24px;
+}
+
+.qr-modal-no-image {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.qr-modal-no-image p {
+    color: #6b7280;
+    margin: 0 0 12px 0;
+}
+
+.qr-code-fallback {
+    background: #f9fafb;
+    padding: 12px 16px;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+.qr-code-fallback code {
+    font-family: monospace;
+    font-size: 14px;
+    color: #374151;
+}
+
+/* モバイル向けモーダル最適化 */
+@media (max-width: 640px) {
+    .qr-modal-overlay {
+        padding: 8px;
+        align-items: flex-end;
+    }
+
+    .qr-modal {
+        max-height: 85vh;
+        border-radius: 16px 16px 0 0;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .qr-modal-header {
+        padding: 16px 20px;
+    }
+
+    .qr-modal-content {
+        padding: 16px 20px 32px;
+    }
+
+    /* タッチターゲット確保 */
+    .btn--sm {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 10px 16px;
     }
 }

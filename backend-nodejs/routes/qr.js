@@ -23,12 +23,33 @@ router.post('/generate-location', authenticate, requireRole(['admin', 'teacher',
     .withMessage('説明は1000文字以下で入力してください'),
   body('expiresAt')
     .optional()
-    .isISO8601()
+    .custom((value) => {
+      // nullまたは空文字の場合はOK
+      if (value === null || value === '' || value === undefined) {
+        return true;
+      }
+      // ISO8601形式の日付文字列かチェック
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        throw new Error('有効な日付形式ではありません');
+      }
+      return true;
+    })
     .withMessage('有効な有効期限を入力してください')
 ], async (req, res) => {
   try {
+    // デバッグログ
+    logger.info('[QR Generate] リクエスト受信', {
+      body: req.body,
+      user: req.user?.id
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      logger.warn('[QR Generate] バリデーションエラー', {
+        errors: errors.array(),
+        body: req.body
+      });
       return res.status(400).json({
         success: false,
         message: '入力データにエラーがあります',
@@ -38,10 +59,18 @@ router.post('/generate-location', authenticate, requireRole(['admin', 'teacher',
 
     const { locationName, locationDescription, expiresAt } = req.body;
 
+    logger.info('[QR Generate] サービス呼び出し', {
+      locationName,
+      locationDescription,
+      expiresAt
+    });
+
     const result = await QRService.generateLocationQRCode(
       { locationName, locationDescription, expiresAt },
       req.user.id
     );
+
+    logger.info('[QR Generate] サービス結果', { success: result.success });
 
     if (result.success) {
       res.status(201).json(result);

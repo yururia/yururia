@@ -106,3 +106,14 @@
     gap: 10px;
     margin-top: 20px;
 }
+
+/* 表示ボタン */
+.btn--view {
+    background-color: #8b5cf6;
+    color: white;
+    border: none;
+}
+
+.btn--view:hover {
+    background-color: #7c3aed;
+}

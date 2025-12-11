@@ -23,13 +23,17 @@ class QRService {
         };
       }
 
+      // 作成者のorganization_idを取得
+      const userResult = await query('SELECT organization_id FROM users WHERE id = ?', [createdBy]);
+      const organizationId = userResult[0]?.organization_id || 1; // デフォルト値として1を使用
+
       // ユニークなQRコードを生成
       const code = `LOC_${uuid.v4()}`;
 
       // データベースに保存
       const sql = `
-        INSERT INTO qr_codes (code, location_name, location_description, created_by, expires_at, is_active)
-        VALUES (?, ?, ?, ?, ?, TRUE)
+        INSERT INTO qr_codes (code, location_name, location_description, created_by, expires_at, is_active, organization_id)
+        VALUES (?, ?, ?, ?, ?, TRUE, ?)
       `;
 
       const result = await query(sql, [
@@ -37,7 +41,8 @@ class QRService {
         locationName,
         locationDescription || null,
         createdBy,
-        expiresAt || null
+        expiresAt || null,
+        organizationId
       ]);
 
       // QRコード画像を生成
@@ -55,10 +60,12 @@ class QRService {
         message: 'QRコードを生成しました',
         data: {
           id: result.insertId,
-          code: code,
-          qrImage: qrImage,
-          locationName: locationName,
-          locationDescription: locationDescription
+          qr_code: code,
+          qr_image: qrImage,
+          location_name: locationName,
+          description: locationDescription,
+          is_active: true,
+          created_at: new Date().toISOString()
         }
       };
     } catch (error) {
@@ -459,6 +466,10 @@ class QRService {
     try {
       const { activeOnly = true, limit = 50, offset = 0 } = options;
 
+      // パラメータを確実に整数に変換
+      const limitInt = parseInt(limit, 10) || 50;
+      const offsetInt = parseInt(offset, 10) || 0;
+
       let sql = `
         SELECT 
           qr.id, qr.code, qr.location_name, qr.location_description,
@@ -469,25 +480,19 @@ class QRService {
         WHERE 1=1
       `;
 
-      const params = [];
-
       if (activeOnly) {
         sql += ' AND qr.is_active = TRUE';
       }
 
       sql += ' ORDER BY qr.created_at DESC';
 
-      // Add pagination
-      if (limit) {
-        sql += ' LIMIT ?';
-        params.push(Number(limit));
-      }
-      if (offset) {
-        sql += ' OFFSET ?';
-        params.push(Number(offset));
+      // LIMIT と OFFSET を直接クエリに埋め込む（整数として検証済み）
+      sql += ` LIMIT ${limitInt}`;
+      if (offsetInt > 0) {
+        sql += ` OFFSET ${offsetInt}`;
       }
 
-      const results = await query(sql, params);
+      const results = await query(sql, []);
 
       return {
         success: true,
