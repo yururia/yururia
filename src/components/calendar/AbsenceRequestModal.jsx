@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import './AbsenceRequestModal.css';
 
@@ -7,12 +7,39 @@ import './AbsenceRequestModal.css';
  */
 const AbsenceRequestModal = ({ isOpen, onClose, defaultDate, onSubmit }) => {
     const [formData, setFormData] = useState({
-        date: defaultDate ? defaultDate.toISOString().split('T')[0] : '',
+        date: '',
         type: 'absent',
         reason: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
+
+    // ポータル用のコンテナを作成（Hooksは条件分岐の前に配置）
+    const [portalContainer] = useState(() => {
+        const div = document.createElement('div');
+        div.id = `absence-request-modal-portal-${Date.now()}`;
+        return div;
+    });
+
+    // defaultDateが変わったらフォームの日付を更新
+    useEffect(() => {
+        if (defaultDate) {
+            const dateStr = defaultDate.toISOString().split('T')[0];
+            setFormData(prev => ({ ...prev, date: dateStr }));
+        }
+    }, [defaultDate]);
+
+    // ポータルのマウント/アンマウント
+    useEffect(() => {
+        if (isOpen) {
+            document.body.appendChild(portalContainer);
+        }
+        return () => {
+            if (document.body.contains(portalContainer)) {
+                document.body.removeChild(portalContainer);
+            }
+        };
+    }, [portalContainer, isOpen]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -42,30 +69,16 @@ const AbsenceRequestModal = ({ isOpen, onClose, defaultDate, onSubmit }) => {
         }
     };
 
-    // ポータル用のコンテナを作成
-    const [portalContainer] = useState(() => {
-        const div = document.createElement('div');
-        div.id = `absence-request-modal-portal-${Date.now()}`; // デバッグ用ID
-        console.log('[AbsenceRequestModal] Created portal container:', div.id);
-        return div;
-    });
-
-    React.useEffect(() => {
-        console.log('[AbsenceRequestModal] Mounting portal container:', portalContainer.id);
-        document.body.appendChild(portalContainer);
-        return () => {
-            console.log('[AbsenceRequestModal] Unmounting portal container:', portalContainer.id);
-            if (document.body.contains(portalContainer)) {
-                document.body.removeChild(portalContainer);
-            } else {
-                console.warn('[AbsenceRequestModal] Portal container not found in body during cleanup:', portalContainer.id);
-            }
-        };
-    }, [portalContainer]);
-
-    console.log('[AbsenceRequestModal] Render. isOpen:', isOpen);
-
+    // 早期リターンは全てのHooksの後に配置
     if (!isOpen) return null;
+
+    // 日付をフォーマット
+    const formattedDate = defaultDate ? new Date(defaultDate).toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long'
+    }) : '';
 
     return ReactDOM.createPortal(
         <div className="absence-modal-overlay" onClick={onClose}>
@@ -81,15 +94,14 @@ const AbsenceRequestModal = ({ isOpen, onClose, defaultDate, onSubmit }) => {
                     )}
 
                     <div className="form-group">
-                        <label htmlFor="date">日付 *</label>
+                        <label>申請日</label>
+                        <div className="selected-date-display">
+                            {formattedDate}
+                        </div>
                         <input
-                            type="date"
-                            id="date"
+                            type="hidden"
                             name="date"
                             value={formData.date}
-                            onChange={handleChange}
-                            required
-                            min={new Date().toISOString().split('T')[0]}
                         />
                     </div>
 

@@ -51,11 +51,12 @@ router.get('/daily-stats', authenticate, [
  */
 router.get('/absence-details/:date', authenticate, async (req, res) => {
     try {
-        // 教員のみアクセス可能
-        if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+        // owner, admin, teacher, employee のみアクセス可能
+        const allowedRoles = ['owner', 'admin', 'teacher', 'employee'];
+        if (!allowedRoles.includes(req.user.role)) {
             return res.status(403).json({
                 success: false,
-                message: 'この操作は教員のみ実行できます'
+                message: 'この操作は教職員のみ実行できます'
             });
         }
 

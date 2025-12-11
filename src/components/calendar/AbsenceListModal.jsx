@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import './AbsenceListModal.css';
@@ -10,6 +10,25 @@ const AbsenceListModal = ({ isOpen, onClose, date, absenceData }) => {
     const [activeTab, setActiveTab] = useState('absent');
     const navigate = useNavigate();
 
+    // ポータル用のコンテナを作成（Hooksは条件分岐の前に配置）
+    const [portalContainer] = useState(() => {
+        const div = document.createElement('div');
+        div.id = `absence-list-modal-portal-${Date.now()}`;
+        return div;
+    });
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.appendChild(portalContainer);
+        }
+        return () => {
+            if (document.body.contains(portalContainer)) {
+                document.body.removeChild(portalContainer);
+            }
+        };
+    }, [portalContainer, isOpen]);
+
+    // 早期リターンは全てのHooksの後に配置
     if (!isOpen || !absenceData) return null;
 
     const formattedDate = date ? new Date(date).toLocaleDateString('ja-JP', {
@@ -31,31 +50,6 @@ const AbsenceListModal = ({ isOpen, onClose, date, absenceData }) => {
     ];
 
     const activeTabData = tabs.find(t => t.key === activeTab);
-
-    // ポータル用のコンテナを作成
-    const [portalContainer] = useState(() => {
-        const div = document.createElement('div');
-        div.id = `absence-list-modal-portal-${Date.now()}`; // デバッグ用ID
-        console.log('[AbsenceListModal] Created portal container:', div.id);
-        return div;
-    });
-
-    React.useEffect(() => {
-        console.log('[AbsenceListModal] Mounting portal container:', portalContainer.id);
-        document.body.appendChild(portalContainer);
-        return () => {
-            console.log('[AbsenceListModal] Unmounting portal container:', portalContainer.id);
-            if (document.body.contains(portalContainer)) {
-                document.body.removeChild(portalContainer);
-            } else {
-                console.warn('[AbsenceListModal] Portal container not found in body during cleanup:', portalContainer.id);
-            }
-        };
-    }, [portalContainer]);
-
-    console.log('[AbsenceListModal] Render. isOpen:', isOpen, 'absenceData:', absenceData ? 'present' : 'null');
-
-    if (!isOpen || !absenceData) return null;
 
     return ReactDOM.createPortal(
         <div className="absence-list-overlay" onClick={onClose}>

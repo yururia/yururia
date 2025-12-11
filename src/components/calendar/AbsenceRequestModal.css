@@ -161,3 +161,14 @@
         opacity: 1;
     }
 }
+
+.selected-date-display {
+    background-color: #eff6ff;
+    border: 1px solid #3b82f6;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e40af;
+    text-align: center;
+}

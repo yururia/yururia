@@ -131,63 +131,63 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
 
   // [追加] 右クリックハンドラー (学生のみ、未来の日付)
   const handleContextMenu = (e, date) => {
-    // 今日の0時0分0秒を取得
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    console.log('=== [Calendar] Right-click detected ===');
+    console.log('[Calendar] user object:', user);
+    console.log('[Calendar] user.role:', user?.role);
+    console.log('[Calendar] date:', date);
 
-    console.log('[Calendar Debug] Context menu triggered:', {
-      role: user?.role,
-      date: date,
-      today: today,
-      isStudent: user?.role === 'student',
-      isFutureDate: date && date.getTime() >= today.getTime()
-    });
-
-    // 日付が存在し、かつ学生である場合のみ処理
+    // 学生の場合は常にブラウザのコンテキストメニューを防ぐ
     if (date && user?.role === 'student') {
+      e.preventDefault();
+
+      // 今日の0時0分0秒を取得
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
       // 未来の日付（今日含む）かチェック
       if (date.getTime() >= today.getTime()) {
-        e.preventDefault();
-        console.log('[Calendar Debug] Opening absence request modal for date:', date);
+        console.log('[Calendar] Opening absence request modal for date:', date);
         setSelectedDate(date);
         setShowAbsenceRequest(true);
       } else {
-        console.log('[Calendar Debug] Date is in the past, context menu allowed');
+        console.log('[Calendar] Date is in the past:', date);
+        alert('過去の日付には欠席申請できません。今日以降の日付を選択してください。');
       }
     } else {
-      console.log('[Calendar Debug] Context menu not triggered - not student or no date');
+      console.log('[Calendar] Not a student or no date');
     }
   };
 
   // [追加] 日付クリックハンドラー (教員のみ)
   const handleDateClick = async (date) => {
-    console.log('[Calendar Debug] Date clicked:', {
-      role: user?.role,
-      date: date,
-      isTeacherOrAdmin: user?.role === 'teacher' || user?.role === 'admin'
-    });
+    console.log('=== [Calendar] Left-click detected ===');
+    console.log('[Calendar] user.role:', user?.role);
+    console.log('[Calendar] date:', date);
 
-    if ((user?.role === 'teacher' || user?.role === 'admin') && date) {
+    // owner, admin, teacher, employee は左クリックでモーダルを開ける
+    const canViewAbsenceList = ['owner', 'admin', 'teacher', 'employee'].includes(user?.role);
+
+    if (canViewAbsenceList && date) {
       try {
         const dateStr = formatDate(date, 'YYYY-MM-DD');
-        console.log('[Calendar Debug] Fetching absence details for:', dateStr);
+        console.log('[Calendar] Fetching absence details for:', dateStr);
 
         const response = await attendanceApi.getAbsenceDetails(dateStr);
-        console.log('[Calendar Debug] Absence details response:', response);
+        console.log('[Calendar] API response:', response);
 
         if (response.success) {
           setAbsenceData(response.data);
           setSelectedDate(date);
           setShowAbsenceList(true);
-          console.log('[Calendar Debug] Opening absence list modal');
+          console.log('[Calendar] Opening absence list modal');
         } else {
-          console.warn('[Calendar Debug] Failed to fetch absence details:', response.message);
+          console.warn('[Calendar] API failed:', response.message);
         }
       } catch (err) {
-        console.error('[Calendar Error] Absence details fetch error:', err);
+        console.error('[Calendar] API error:', err);
       }
     } else {
-      console.log('[Calendar Debug] Click handler not triggered - not teacher/admin or no date');
+      console.log('[Calendar] Not authorized or no date. Role:', user?.role);
     }
   };
 
