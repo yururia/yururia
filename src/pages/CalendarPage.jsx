@@ -343,7 +343,7 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
                   let statusClass = 'status-none';
                   if (approvedRequest) {
                     // 承認された申請のタイプに応じてステータスを設定
-                    if (approvedRequest.request_type === 'absence' || approvedRequest.request_type === 'official_absence') {
+                    if (approvedRequest.request_type === 'absence' || approvedRequest.request_type === 'absent' || approvedRequest.request_type === 'official_absence') {
                       statusClass = 'status-absent';
                     } else if (approvedRequest.request_type === 'late' || approvedRequest.request_type === 'official_late') {
                       statusClass = 'status-late';
@@ -428,9 +428,15 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
                           )}
 
                           {/* [追加] 欠席申請の表示（1日1件のみ） */}
+                          {/* [追加] 欠席申請の表示（1日1件のみ、却下済みは非表示） */}
                           {dayRequests.length > 0 && (() => {
+                            // 却下された申請は除外
+                            const visibleRequests = dayRequests.filter(req => req.status !== 'rejected');
+
+                            if (visibleRequests.length === 0) return null;
+
                             // 1日につき最新の申請のみ表示
-                            const latestRequest = dayRequests[0];
+                            const latestRequest = visibleRequests[0];
                             const getStatusMark = (status) => {
                               switch (status) {
                                 case 'pending': return '📝';

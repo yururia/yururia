@@ -599,4 +599,43 @@
   .request-mark {
     font-size: 0.875rem;
   }
+
+  /* モバイル対応：承認済みリクエストは背景色で分かるため、マークも非表示にしてスッキリさせる */
+  .request-item.request-approved {
+    display: none;
+  }
+}
+
+/* カレンダーステータス背景色 */
+.calendar-day.status-present {
+  background-color: #d1fae5;
+  border-left: 3px solid #34d399;
+}
+
+.calendar-day.status-absent {
+  background-color: #fee2e2;
+  border-left: 3px solid #f87171;
+}
+
+.calendar-day.status-late {
+  background-color: #fef3c7;
+  border-left: 3px solid #fbbf24;
+}
+
+.calendar-day.status-early_departure {
+  background-color: #ffedd5;
+  border-left: 3px solid #fdba74;
+}
+
+/* 今日のステータス付きセルは少し強調 */
+.calendar-day.today.status-present {
+  background-color: #a7f3d0;
+}
+
+.calendar-day.today.status-absent {
+  background-color: #fecaca;
+}
+
+.calendar-day.today.status-late {
+  background-color: #fde68a;
 }
