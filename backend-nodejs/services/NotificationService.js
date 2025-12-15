@@ -65,9 +65,13 @@ class NotificationService {
         type,
         priority,
         is_read,
-        limit,
+        limit = 50,
         offset = 0
       } = options;
+
+      // 数値に変換
+      const limitNum = parseInt(limit) || 50;
+      const offsetNum = parseInt(offset) || 0;
 
       let sql = `
         SELECT id, title, message, type, priority, is_read, read_at, created_at
@@ -75,7 +79,6 @@ class NotificationService {
         WHERE 1=1
       `;
       const params = [];
-      const countParams = [];
 
       if (user_id) {
         sql += ' AND user_id = ?';
@@ -85,7 +88,7 @@ class NotificationService {
         sql += ' AND student_id = ?';
         params.push(student_id);
       }
-      
+
       if (type) {
         sql += ' AND type = ?';
         params.push(type);
@@ -98,32 +101,24 @@ class NotificationService {
         sql += ' AND is_read = ?';
         params.push(Boolean(is_read));
       }
-      
+
       const countSql = `SELECT COUNT(*) as total FROM (${sql}) as count_query`;
-      Object.assign(countParams, params);
+      const countParams = [...params];
 
       sql += ' ORDER BY created_at DESC';
-
-      if (limit) {
-        sql += ' LIMIT ?';
-        params.push(parseInt(limit));
-      }
-      if (offset) {
-        sql += ' OFFSET ?';
-        params.push(parseInt(offset));
-      }
+      sql += ` LIMIT ${limitNum} OFFSET ${offsetNum}`;
 
       const notifications = await query(sql, params);
       const countResult = await query(countSql, countParams);
-      const total = countResult[0].total;
+      const total = countResult[0]?.total || 0;
 
       return {
         success: true,
         data: {
           notifications,
           total,
-          limit: limit ? parseInt(limit) : null,
-          offset: parseInt(offset)
+          limit: limitNum,
+          offset: offsetNum
         }
       };
     } catch (error) {
@@ -193,21 +188,21 @@ class NotificationService {
 
       if (result.affectedRows === 0) {
         if (authRole === 'admin') {
-           const adminResult = await query(
-             'UPDATE notifications SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE id = ?',
-             [id]
-           );
-           if (adminResult.affectedRows > 0) {
-             logger.info('管理者が通知を既読にしました', { notificationId: id, adminId: authUserId });
-             return { success: true, message: '通知を既読にしました' };
-           }
+          const adminResult = await query(
+            'UPDATE notifications SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [id]
+          );
+          if (adminResult.affectedRows > 0) {
+            logger.info('管理者が通知を既読にしました', { notificationId: id, adminId: authUserId });
+            return { success: true, message: '通知を既読にしました' };
+          }
         }
         return {
           success: false,
           message: '通知が見つからないか、権限がありません'
         };
       }
-      
+
       logger.info('通知を既読にしました', { notificationId: id, userId: authUserId });
       return {
         success: true,
@@ -252,7 +247,7 @@ class NotificationService {
    * 通知の削除
    */
   static async deleteNotification(id, authUserId, authStudentId = null, authRole = 'employee') {
-     try {
+    try {
       const result = await query(
         `DELETE FROM notifications 
          WHERE id = ? AND (user_id = ? OR student_id = ?)`,
@@ -260,16 +255,16 @@ class NotificationService {
       );
 
       if (result.affectedRows === 0) {
-         if (authRole === 'admin') {
-           const adminResult = await query(
-             'DELETE FROM notifications WHERE id = ?',
-             [id]
-           );
-           if (adminResult.affectedRows > 0) {
-             logger.info('管理者が通知を削除しました', { notificationId: id, adminId: authUserId });
-             return { success: true, message: '通知が削除されました' };
-           }
-         }
+        if (authRole === 'admin') {
+          const adminResult = await query(
+            'DELETE FROM notifications WHERE id = ?',
+            [id]
+          );
+          if (adminResult.affectedRows > 0) {
+            logger.info('管理者が通知を削除しました', { notificationId: id, adminId: authUserId });
+            return { success: true, message: '通知が削除されました' };
+          }
+        }
         return {
           success: false,
           message: '通知が見つからないか、削除権限がありません'

@@ -24,7 +24,11 @@ const AbsenceRequestModal = ({ isOpen, onClose, defaultDate, onSubmit }) => {
     // defaultDateが変わったらフォームの日付を更新
     useEffect(() => {
         if (defaultDate) {
-            const dateStr = defaultDate.toISOString().split('T')[0];
+            // ローカル日付を使用（タイムゾーン問題を回避）
+            const year = defaultDate.getFullYear();
+            const month = String(defaultDate.getMonth() + 1).padStart(2, '0');
+            const day = String(defaultDate.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
             setFormData(prev => ({ ...prev, date: dateStr }));
         }
     }, [defaultDate]);

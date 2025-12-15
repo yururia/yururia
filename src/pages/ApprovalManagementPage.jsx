@@ -21,7 +21,7 @@ const ApprovalManagementPage = () => {
         setLoading(true);
         try {
             let response;
-            if (user?.role === 'admin') {
+            if (user?.role === 'admin' || user?.role === 'owner') {
                 response = await absenceRequestApi.getAllRequests({ status: filter === 'all' ? null : filter });
             } else if (user?.role === 'teacher') {
                 response = await absenceRequestApi.getPendingRequestsForTeacher(user.id, { status: filter === 'all' ? null : filter });
@@ -74,6 +74,21 @@ const ApprovalManagementPage = () => {
         }
     };
 
+    // 通知を3秒後に自動消去
+    useEffect(() => {
+        if (success) {
+            const timer = setTimeout(() => setSuccess(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [success]);
+
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => setError(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
+
     const getRequestTypeLabel = (type) => {
         const labels = {
             'absence': '欠席届',
@@ -86,14 +101,29 @@ const ApprovalManagementPage = () => {
 
     return (
         <div className="approval-page">
+            {/* トースト通知 */}
+            <div className="toast-container">
+                {success && (
+                    <div className="toast toast--success">
+                        <span className="toast-icon">✓</span>
+                        <span className="toast-message">{success}</span>
+                        <button className="toast-close" onClick={() => setSuccess(null)}>×</button>
+                    </div>
+                )}
+                {error && (
+                    <div className="toast toast--error">
+                        <span className="toast-icon">⚠️</span>
+                        <span className="toast-message">{error}</span>
+                        <button className="toast-close" onClick={() => setError(null)}>×</button>
+                    </div>
+                )}
+            </div>
+
             <div className="approval-container">
                 <div className="page-header">
                     <h1>承認管理</h1>
                     <p className="page-subtitle">学生からの申請を承認・却下します</p>
                 </div>
-
-                {error && <div className="alert alert--error"><span>⚠️ {error}</span><button onClick={() => setError(null)}>×</button></div>}
-                {success && <div className="alert alert--success"><span>✓ {success}</span><button onClick={() => setSuccess(null)}>×</button></div>}
 
                 <div className="filter-bar">
                     <button className={`filter-btn ${filter === 'pending' ? 'active' : ''}`} onClick={() => setFilter('pending')}>承認待ち</button>
@@ -153,7 +183,15 @@ const ApprovalManagementPage = () => {
                             </div>
                             <div className="form-group">
                                 <label>コメント（承認時は任意、却下時は必須）</label>
-                                <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows="4" className="form-textarea" placeholder="コメントを入力..." />
+                                <textarea
+                                    value={comment}
+                                    onChange={(e) => setComment(e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    rows="4"
+                                    className="form-textarea"
+                                    placeholder="コメントを入力..."
+                                />
                             </div>
                         </div>
                         <div className="modal-footer">

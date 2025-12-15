@@ -180,11 +180,11 @@ router.get('/teacher/:teacherId', async (req, res) => {
  */
 router.get('/all', async (req, res) => {
     try {
-        // 管理者のみ
-        if (req.user.role !== 'admin') {
+        // 管理者、オーナー、教員がアクセス可能
+        if (req.user.role !== 'admin' && req.user.role !== 'owner' && req.user.role !== 'teacher') {
             return res.status(403).json({
                 success: false,
-                message: '管理者のみアクセスできます'
+                message: '管理者・教員のみアクセスできます'
             });
         }
 

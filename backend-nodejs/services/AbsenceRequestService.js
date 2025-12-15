@@ -95,9 +95,10 @@ class AbsenceRequestService {
             let sql = `
         SELECT 
           ar.id, ar.student_id, ar.class_session_id, ar.request_type,
-          ar.request_date, ar.reason, ar.attachment_url, ar.status,
+          DATE_FORMAT(ar.request_date, '%Y-%m-%d') as request_date,
+          ar.reason, ar.attachment_url, ar.status,
           ar.submitted_at, ar.updated_at,
-          cs.class_date, cs.period_number,
+          DATE_FORMAT(cs.class_date, '%Y-%m-%d') as class_date, cs.period_number,
           subj.subject_name
         FROM absence_requests ar
         LEFT JOIN class_sessions cs ON ar.class_session_id = cs.id
@@ -122,8 +123,9 @@ class AbsenceRequestService {
                 params.push(endDate);
             }
 
-            sql += ' ORDER BY ar.submitted_at DESC LIMIT ? OFFSET ?';
-            params.push(limit, offset);
+            const limitInt = parseInt(limit, 10);
+            const offsetInt = parseInt(offset, 10);
+            sql += ` ORDER BY ar.submitted_at DESC LIMIT ${limitInt} OFFSET ${offsetInt}`;
 
             return await query(sql, params);
         } catch (error) {
@@ -161,10 +163,10 @@ class AbsenceRequestService {
         LEFT JOIN subjects subj ON cs.subject_id = subj.id
         WHERE gt.user_id = ? AND ar.status = 'pending'
         ORDER BY ar.submitted_at ASC
-        LIMIT ? OFFSET ?
+        LIMIT ${parseInt(limit, 10)} OFFSET ${parseInt(offset, 10)}
       `;
 
-            return await query(sql, [teacherId, limit, offset]);
+            return await query(sql, [teacherId]);
         } catch (error) {
             logger.error('教員承認待ち申請取得エラー:', error);
             throw error;
@@ -212,8 +214,9 @@ class AbsenceRequestService {
                 params.push(endDate);
             }
 
-            sql += ' ORDER BY ar.submitted_at DESC LIMIT ? OFFSET ?';
-            params.push(limit, offset);
+            const limitInt = parseInt(limit, 10);
+            const offsetInt = parseInt(offset, 10);
+            sql += ` ORDER BY ar.submitted_at DESC LIMIT ${limitInt} OFFSET ${offsetInt}`;
 
             return await query(sql, params);
         } catch (error) {

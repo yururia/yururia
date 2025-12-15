@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../../stores/authStore';
+import { notificationApi } from '../../api';
 import './Header.css';
 
 // ドロップダウンメニューコンポーネント（デスクトップ用）
@@ -60,8 +61,31 @@ const Header = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const currentRole = user?.role;
+
+  // 未読通知数を取得
+  const fetchUnreadCount = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const response = await notificationApi.getNotifications({ limit: 50 });
+      if (response.success) {
+        const notifications = response.data?.notifications || [];
+        const count = notifications.filter(n => !n.is_read).length;
+        setUnreadCount(count);
+      }
+    } catch (err) {
+      console.error('未読通知取得エラー:', err);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    // 30秒ごとに更新
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -176,6 +200,15 @@ const Header = () => {
             ) : isAuthenticated ? (
               <div className="nav-links-right desktop-only">
                 {currentRole !== 'student' && renderManagementMenu()}
+
+                {/* 通知アイコン */}
+                <NavLink to="/notifications" className="notification-icon-wrapper">
+                  <span className="notification-bell">🔔</span>
+                  {unreadCount > 0 && (
+                    <span className="notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                  )}
+                </NavLink>
+
                 <Dropdown
                   trigger={
                     <div className="profile-trigger">
@@ -189,6 +222,9 @@ const Header = () => {
                     {user?.name}
                   </div>
                   <NavLink to="/calendar" className={getDropdownItemClass}>カレンダー</NavLink>
+                  <NavLink to="/notifications" className={getDropdownItemClass}>
+                    📬 お知らせ {unreadCount > 0 && <span className="menu-badge">{unreadCount}</span>}
+                  </NavLink>
                   <NavLink to="/profile" className={getDropdownItemClass}>プロフィール</NavLink>
                   <button onClick={handleLogout} className="dropdown-item" style={{ color: '#ef4444' }}>
                     ログアウト
@@ -202,7 +238,15 @@ const Header = () => {
               </div>
             )}
 
-            {/* モバイル用ハンバーガーボタン */}
+            {/* モバイル用: お知らせベル + ハンバーガーボタン */}
+            {isAuthenticated && (
+              <NavLink to="/notifications" className="notification-icon-wrapper mobile-notification">
+                <span className="notification-bell">🔔</span>
+                {unreadCount > 0 && (
+                  <span className="notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                )}
+              </NavLink>
+            )}
             <HamburgerIcon
               isOpen={isMobileMenuOpen}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -240,11 +284,14 @@ const Header = () => {
 
               {isAuthenticated ? (
                 <div className="mobile-drawer-content">
-                  {/* ユーザー情報 */}
-                  <div className="mobile-user-info">
+                  {/* ユーザー情報（タップでプロフィールへ） */}
+                  <NavLink to="/profile" className="mobile-user-info" onClick={closeMobileMenu}>
                     <span className="profile-icon large">{user?.name?.charAt(0) || 'P'}</span>
-                    <span className="mobile-user-name">{user?.name}</span>
-                  </div>
+                    <div className="mobile-user-details">
+                      <span className="mobile-user-name">{user?.name}</span>
+                      <span className="mobile-user-hint">プロフィールを見る →</span>
+                    </div>
+                  </NavLink>
 
                   {/* ナビゲーションリンク */}
                   <div className="mobile-nav-section">
@@ -291,6 +338,9 @@ const Header = () => {
 
                   {/* その他 */}
                   <div className="mobile-nav-section">
+                    <NavLink to="/notifications" className={getMobileLinkClass} onClick={closeMobileMenu}>
+                      📬 お知らせ
+                    </NavLink>
                     <NavLink to="/profile" className={getMobileLinkClass} onClick={closeMobileMenu}>
                       プロフィール
                     </NavLink>

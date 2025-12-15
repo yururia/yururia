@@ -24,7 +24,7 @@
   "scripts": {
     "start": "react-scripts start",
     "start:powershell": "$env:BROWSER='chrome'; react-scripts start",
-    "start:https": "set HTTPS=true&&react-scripts start",
+    "start:https": "set HTTPS=true&&set PORT=3000&&react-scripts start",
     "start:https:ps": "$env:HTTPS='true'; react-scripts start",
     "start:no-browser": "react-scripts start --no-browser",
     "build": "react-scripts build",

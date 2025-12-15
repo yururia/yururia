@@ -45,9 +45,9 @@ class TimetableService {
         SELECT 
           t.id, t.group_id, t.academic_year, t.semester,
           t.start_date, t.end_date, t.is_active, t.created_at, t.updated_at,
-          g.name as group_name, g.grade
+          g.name as group_name
         FROM timetables t
-        JOIN groups g ON t.group_id = g.id
+        JOIN \`groups\` g ON t.group_id = g.id
         WHERE t.id = ?
       `;
 
@@ -409,34 +409,66 @@ class TimetableService {
      */
     static async getOrganizationSettings(organizationId) {
         try {
-            // 組織の基本設定を取得
-            const orgSql = `
-                SELECT id, name, late_limit_minutes, date_reset_time
-                FROM organizations
-                WHERE id = ?
-            `;
-            const orgs = await query(orgSql, [organizationId]);
-
-            if (orgs.length === 0) {
-                throw new Error('組織が見つかりません');
+            // organization_settings テーブルから設定を取得
+            let settings = { late_limit_minutes: 15, date_reset_time: '04:00:00' };
+            try {
+                const settingsSql = `
+                    SELECT late_limit_minutes, date_reset_time
+                    FROM organization_settings
+                    WHERE organization_id = ?
+                `;
+                const settingsResult = await query(settingsSql, [organizationId]);
+                logger.info('organization_settings クエリ結果', {
+                    organizationId,
+                    resultCount: settingsResult.length,
+                    data: settingsResult
+                });
+                if (settingsResult.length > 0) {
+                    settings = settingsResult[0];
+                }
+            } catch (settingsError) {
+                // テーブルが存在しない場合はデフォルト値を使用
+                logger.warn('organization_settings テーブルエラー:', settingsError.message);
             }
 
             // 時限設定を取得
-            const slotsSql = `
-                SELECT id, period_number, period_name, start_time, end_time
-                FROM organization_time_slots
-                WHERE organization_id = ?
-                ORDER BY period_number
-            `;
-            const timeSlots = await query(slotsSql, [organizationId]);
+            let timeSlots = [];
+            try {
+                const slotsSql = `
+                    SELECT id, period_number, period_name, start_time, end_time
+                    FROM organization_time_slots
+                    WHERE organization_id = ?
+                    ORDER BY period_number
+                `;
+                timeSlots = await query(slotsSql, [organizationId]);
+            } catch (slotsError) {
+                // テーブルが存在しない場合は空配列
+                logger.warn('organization_time_slots テーブルが存在しません');
+            }
+
+            // デバッグログ
+            logger.info('組織設定取得成功', {
+                organizationId,
+                lateLimitMinutes: settings.late_limit_minutes,
+                dateResetTime: settings.date_reset_time,
+                timeSlotsCount: timeSlots.length
+            });
+
+            // timeSlotsをキャメルケースに変換
+            const formattedTimeSlots = timeSlots.map(slot => ({
+                id: slot.id,
+                periodNumber: slot.period_number,
+                periodName: slot.period_name,
+                startTime: slot.start_time,
+                endTime: slot.end_time
+            }));
 
             return {
                 success: true,
                 data: {
-                    organization: orgs[0],
-                    lateLimitMinutes: orgs[0].late_limit_minutes || 15,
-                    dateResetTime: orgs[0].date_reset_time || '04:00:00',
-                    timeSlots: timeSlots
+                    lateLimitMinutes: settings.late_limit_minutes || 15,
+                    dateResetTime: settings.date_reset_time || '04:00:00',
+                    timeSlots: formattedTimeSlots
                 }
             };
         } catch (error) {
@@ -455,20 +487,50 @@ class TimetableService {
         try {
             const { lateLimitMinutes, dateResetTime, timeSlots } = settings;
 
-            // 組織設定を更新
-            const updateOrgSql = `
-                UPDATE organizations
-                SET late_limit_minutes = ?, date_reset_time = ?, updated_at = NOW()
-                WHERE id = ?
-            `;
-            await query(updateOrgSql, [
-                lateLimitMinutes || 15,
-                dateResetTime || '04:00:00',
-                organizationId
-            ]);
+            // organization_settings テーブルに設定を保存（UPSERT）
+            // テーブルが存在しない場合は作成を試みる
+            try {
+                const checkTable = await query(`
+                    CREATE TABLE IF NOT EXISTS organization_settings (
+                        organization_id INT PRIMARY KEY,
+                        late_limit_minutes INT DEFAULT 15,
+                        date_reset_time TIME DEFAULT '04:00:00',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                    )
+                `);
+
+                // 設定を挿入または更新
+                await query(`
+                    INSERT INTO organization_settings (organization_id, late_limit_minutes, date_reset_time)
+                    VALUES (?, ?, ?)
+                    ON DUPLICATE KEY UPDATE 
+                        late_limit_minutes = VALUES(late_limit_minutes),
+                        date_reset_time = VALUES(date_reset_time)
+                `, [organizationId, lateLimitMinutes || 15, dateResetTime || '04:00:00']);
+            } catch (orgSettingsError) {
+                logger.warn('organization_settings テーブルへの保存スキップ:', orgSettingsError.message);
+            }
 
             // 時限設定を更新（一度削除して再作成）
             if (timeSlots && Array.isArray(timeSlots)) {
+                // organization_time_slots テーブルも作成を試みる
+                try {
+                    await query(`
+                        CREATE TABLE IF NOT EXISTS organization_time_slots (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            organization_id INT NOT NULL,
+                            period_number INT NOT NULL,
+                            period_name VARCHAR(50),
+                            start_time TIME NOT NULL,
+                            end_time TIME NOT NULL,
+                            UNIQUE KEY unique_period (organization_id, period_number)
+                        )
+                    `);
+                } catch (createError) {
+                    // テーブルが既に存在する場合は無視
+                }
+
                 await query('DELETE FROM organization_time_slots WHERE organization_id = ?', [organizationId]);
 
                 for (const slot of timeSlots) {

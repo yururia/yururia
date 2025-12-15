@@ -152,6 +152,23 @@ router.get('/report', authenticate, [
     }
 
     const { year, month, userId } = req.query;
+
+    // 学生ロールの場合はStudentAttendanceServiceを使用
+    if (req.user.role === 'student') {
+      const StudentAttendanceService = require('../services/StudentAttendanceService');
+      const studentId = req.user.student_id;
+
+      console.log('[Debug] getMonthlyReport (student):', { studentId, year, month });
+
+      const result = await StudentAttendanceService.getStudentMonthlyReport(
+        studentId,
+        parseInt(year),
+        parseInt(month)
+      );
+      return res.json(result);
+    }
+
+    // 管理者・教師・従業員の場合は従来通り
     let targetUserId = userId;
     if (!targetUserId || targetUserId === 'undefined' || targetUserId === 'null') {
       targetUserId = req.user.id;

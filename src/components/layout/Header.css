@@ -263,6 +263,18 @@
   padding: 1rem 1.25rem;
   margin-bottom: 0.5rem;
   border-bottom: 1px solid #e5e7eb;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.mobile-user-info:active {
+  background-color: #f3f4f6;
+}
+
+.mobile-user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .profile-icon.large {
@@ -274,6 +286,22 @@
 .mobile-user-name {
   font-weight: 500;
   color: var(--text-primary, #1f2937);
+}
+
+.mobile-user-hint {
+  font-size: 0.75rem;
+  color: #3b82f6;
+}
+
+/* モバイル用ベルアイコン（デスクトップでは非表示） */
+.notification-icon-wrapper.mobile-notification {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .notification-icon-wrapper.mobile-notification {
+    display: flex;
+  }
 }
 
 .mobile-nav-section {
@@ -416,4 +444,68 @@
 .profile-trigger:hover .profile-icon {
   background-color: var(--primary-color);
   color: white;
+}
+
+/* 通知アイコン */
+.notification-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.notification-icon-wrapper:hover {
+  background-color: #f3f4f6;
+}
+
+.notification-bell {
+  font-size: 1.25rem;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  animation: pulse 2s infinite;
+}
+
+.menu-badge {
+  display: inline-block;
+  background: #ef4444;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 8px;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
 }

@@ -69,17 +69,27 @@ export const absenceRequestApi = {
      * @returns {Promise} 作成結果
      */
     createRequest: async (data, file = null) => {
+        // バックエンドが期待するフィールド名に変換
+        const requestBody = {
+            type: data.requestType || data.type,
+            date: data.requestDate || data.date,
+            reason: data.reason,
+            classSessionId: data.classId || data.classSessionId
+        };
+
         if (file) {
             const formData = new FormData();
-            formData.append('studentId', data.studentId);
-            formData.append('requestType', data.requestType);
-            formData.append('requestDate', data.requestDate);
-            formData.append('reason', data.reason);
+            formData.append('type', requestBody.type);
+            formData.append('date', requestBody.date);
+            formData.append('reason', requestBody.reason);
+            if (requestBody.classSessionId) {
+                formData.append('classSessionId', requestBody.classSessionId);
+            }
             formData.append('attachment', file);
 
             return formDataClient.post('/absence-requests', formData);
         } else {
-            return apiClient.post('/absence-requests', data);
+            return apiClient.post('/absence-requests', requestBody);
         }
     },
 

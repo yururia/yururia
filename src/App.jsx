@@ -29,6 +29,7 @@ const QRGeneratorPage = React.lazy(() => import('./pages/QRGeneratorPage'));
 const AbsenceRequestPage = React.lazy(() => import('./pages/AbsenceRequestPage'));
 const ApprovalManagementPage = React.lazy(() => import('./pages/ApprovalManagementPage'));
 const TimetablePage = React.lazy(() => import('./pages/TimetablePage'));
+const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage'));
 
 // グローバルなローディングスピナー
 const GlobalLoader = () => (
@@ -265,6 +266,14 @@ const AppContent = React.memo(() => {
             element={
               <ProtectedRoute>
                 <TimetablePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
               </ProtectedRoute>
             }
           />

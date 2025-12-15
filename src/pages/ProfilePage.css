@@ -144,6 +144,8 @@
   border-radius: 4px;
   font-size: 14px;
   transition: border-color 0.2s ease;
+  background-color: white;
+  color: #111827;
 }
 
 .form-input:focus {
@@ -178,34 +180,34 @@
   .profile-page {
     padding: 16px;
   }
-  
+
   .profile-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
-  
+
   .profile-avatar-section {
     flex-direction: column;
     text-align: center;
     gap: 16px;
   }
-  
+
   .profile-avatar {
     width: 60px;
     height: 60px;
     font-size: 1.5rem;
   }
-  
+
   .profile-basic-info h2 {
     font-size: 1.25rem;
   }
-  
+
   .edit-actions {
     flex-direction: column;
     width: 100%;
   }
-  
+
   .edit-actions .btn {
     width: 100%;
   }
@@ -217,62 +219,63 @@
     background: #1f2937;
     color: #f9fafb;
   }
-  
+
   .profile-header {
     background: #111827;
     border-bottom-color: #374151;
   }
-  
+
   .profile-header h1 {
     color: #f9fafb;
   }
-  
+
   .profile-card {
     background: #1f2937;
     border-color: #374151;
   }
-  
+
   .profile-details h3 {
     color: #f9fafb;
   }
-  
+
   .profile-field label {
     color: #d1d5db;
   }
-  
+
   .field-value {
     background: #374151;
     color: #f3f4f6;
   }
-  
+
   .field-value--muted {
     color: #9ca3af;
   }
-  
+
   .form-input {
     background: #374151;
     border-color: #4b5563;
     color: #f9fafb;
   }
-  
+
   .form-input:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
   }
-  
+
   .profile-groups {
     background: #111827;
     border-color: #374151;
   }
-  
+
   .profile-groups h3 {
     color: #f9fafb;
   }
-  
+
   .profile-groups p {
     color: #9ca3af;
   }
 }
+
 /* --- 以下のコードを ProfilePage.css の末尾に追記 --- */
 
 /* 入力フィールド */
@@ -281,20 +284,24 @@
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  background-color: white;
+  color: #111827;
 }
+
 .edit-input--name {
-  font-size: 1.5rem; 
+  font-size: 1.5rem;
   font-weight: 600;
 }
 
 /* ロール変更セクション */
 .profile-role-change {
   margin-top: 24px;
-  border: 1px solid #fecaca; 
-  background: #fef2f2; 
+  border: 1px solid #fecaca;
+  background: #fef2f2;
 }
+
 .profile-role-change label {
-  color: #b91c1c; 
+  color: #b91c1c;
   font-size: 1.1rem;
   font-weight: 600;
 }
@@ -362,6 +369,7 @@
   padding: 1rem;
   border-radius: 4px;
 }
+
 .role-selection label {
   display: flex;
   align-items: center;

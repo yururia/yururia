@@ -9,6 +9,7 @@ export { groupApi } from './groupApi';
 export { absenceRequestApi } from './absenceRequestApi';
 export { timetableApi } from './timetableApi';
 export { securityApi } from './securityApi';
+export { notificationApi } from './notificationApi';
 
 // デフォルトエクスポート（後方互換性のため）
 import { attendanceApi } from './attendanceApi';

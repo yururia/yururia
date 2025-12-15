@@ -46,15 +46,24 @@ class ApprovalService {
                 }
 
                 // 通知を送信（非同期）
-                setImmediate(() => {
+                const studentId = requestData[0]?.student_id;
+                const requestType = requestData[0]?.request_type;
+                const requestDate = requestData[0]?.request_date;
+                const formattedDate = requestDate ? new Date(requestDate).toLocaleDateString('ja-JP') : '';
+
+                logger.info('承認通知送信準備', { studentId, requestType, requestDate });
+
+                if (studentId) {
                     NotificationService.createNotification({
-                        studentId: requestData.student_id,
-                        type: 'general',
-                        title: '申請が承認されました',
-                        message: `${requestData.request_type}の申請が承認されました。`,
+                        student_id: studentId,
+                        type: 'approval',
+                        title: '✅ 申請が承認されました',
+                        message: `あなたの${formattedDate ? formattedDate + 'の' : ''}申請（${ApprovalService._getRequestTypeLabel(requestType)}）が承認されました。\nカレンダーで確認してください。`,
                         priority: 'medium'
+                    }).then(() => {
+                        logger.info('承認通知送信成功', { studentId });
                     }).catch(err => logger.error('通知送信エラー:', err));
-                });
+                }
 
                 return {
                     success: true,
@@ -103,15 +112,24 @@ class ApprovalService {
                 const [requestData] = await conn.query(requestSql, [requestId]);
 
                 // 通知を送信（非同期）
-                setImmediate(() => {
+                const studentId = requestData[0]?.student_id;
+                const requestType = requestData[0]?.request_type;
+                const requestDate = requestData[0]?.request_date;
+                const formattedDate = requestDate ? new Date(requestDate).toLocaleDateString('ja-JP') : '';
+
+                logger.info('却下通知送信準備', { studentId, requestType, requestDate });
+
+                if (studentId) {
                     NotificationService.createNotification({
-                        studentId: requestData.student_id,
-                        type: 'general',
-                        title: '申請が却下されました',
-                        message: `${requestData.request_type}の申請が却下されました。${comment ? `理由: ${comment}` : ''}`,
+                        student_id: studentId,
+                        type: 'rejection',
+                        title: '❌ 申請が却下されました',
+                        message: `あなたの${formattedDate ? formattedDate + 'の' : ''}申請（${ApprovalService._getRequestTypeLabel(requestType)}）が却下されました。${comment ? `\n理由: ${comment}` : ''}\nカレンダーで確認してください。`,
                         priority: 'high'
+                    }).then(() => {
+                        logger.info('却下通知送信成功', { studentId });
                     }).catch(err => logger.error('通知送信エラー:', err));
-                });
+                }
 
                 return {
                     success: true,
@@ -201,6 +219,22 @@ class ApprovalService {
             logger.error('承認履歴取得エラー:', error);
             throw error;
         }
+    }
+
+    /**
+     * リクエストタイプのラベルを取得
+     * @param {string} type - リクエストタイプ
+     * @returns {string} ラベル
+     */
+    static _getRequestTypeLabel(type) {
+        const labels = {
+            'absence': '欠席届',
+            'official_absence': '公欠届',
+            'official_late': '公遅刻届',
+            'early_departure': '早退届',
+            'absent': '欠席届'
+        };
+        return labels[type] || type || '申請';
     }
 }
 

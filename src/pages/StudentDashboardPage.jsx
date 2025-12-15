@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/authStore';
 import { useLoginRedirect } from '../hooks/useLoginRedirect';
 import { attendanceApi } from '../api/attendanceApi';
@@ -8,6 +9,7 @@ import './StudentDashboardPage.css';
 const StudentDashboardPage = () => {
   const { user, isAuthenticated } = useAuthStore();
   const { requireAuth } = useLoginRedirect();
+  const navigate = useNavigate();
   const [groups, setGroups] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -15,6 +17,8 @@ const StudentDashboardPage = () => {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [lastScanResult, setLastScanResult] = useState(null);
   const [classSelectionData, setClassSelectionData] = useState(null);
+  // 出席結果モーダル用state
+  const [attendanceResult, setAttendanceResult] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -146,10 +150,17 @@ const StudentDashboardPage = () => {
           // 複数授業がある場合は選択UIを表示
           setClassSelectionData(response.data);
         } else if (response.success) {
-          // 記録成功
+          // 記録成功 - 結果をモーダルで表示
           setShowQRScanner(false);
           setClassSelectionData(null);
-          alert(`出席記録が完了しました！`);
+          setAttendanceResult({
+            success: true,
+            status: response.status || 'present',
+            message: response.message,
+            location: response.location,
+            logicalDate: response.logicalDate,
+            time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+          });
           await loadStudentData();
         } else {
           setError(response.message);
@@ -165,6 +176,19 @@ const StudentDashboardPage = () => {
         setIsLoading(false);
       }
     });
+  };
+
+  // 遅刻届を出す
+  const handleLateRequest = () => {
+    if (attendanceResult) {
+      navigate(`/absence-request?type=late&date=${attendanceResult.logicalDate}`);
+      setAttendanceResult(null);
+    }
+  };
+
+  // 結果モーダルを閉じる
+  const closeResultModal = () => {
+    setAttendanceResult(null);
   };
 
   const handleSelectClass = async (classId) => {
@@ -398,6 +422,58 @@ const StudentDashboardPage = () => {
         scanResult={classSelectionData}
         onSelectClass={handleSelectClass}
       />
+
+      {/* 出席結果モーダル */}
+      {attendanceResult && (
+        <div className="attendance-result-overlay" onClick={closeResultModal}>
+          <div
+            className={`attendance-result-modal ${attendanceResult.status === 'late' ? 'late' : 'present'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="result-icon">
+              {attendanceResult.status === 'late' ? '⏰' : '✅'}
+            </div>
+            <h2 className="result-title">
+              {attendanceResult.status === 'late' ? '遅刻' : '出席'}
+            </h2>
+            <p className="result-message">{attendanceResult.message}</p>
+
+            <div className="result-details">
+              <div className="detail-row">
+                <span className="detail-label">時刻</span>
+                <span className="detail-value">{attendanceResult.time}</span>
+              </div>
+              {attendanceResult.location && (
+                <div className="detail-row">
+                  <span className="detail-label">場所</span>
+                  <span className="detail-value">{attendanceResult.location}</span>
+                </div>
+              )}
+              <div className="detail-row">
+                <span className="detail-label">日付</span>
+                <span className="detail-value">{attendanceResult.logicalDate}</span>
+              </div>
+            </div>
+
+            <div className="result-actions">
+              {attendanceResult.status === 'late' && (
+                <button
+                  className="btn btn-warning"
+                  onClick={handleLateRequest}
+                >
+                  📝 遅刻届を提出
+                </button>
+              )}
+              <button
+                className="btn btn-primary"
+                onClick={closeResultModal}
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

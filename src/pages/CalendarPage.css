@@ -114,23 +114,31 @@
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
   border: 1px solid #e5e7eb;
-  overflow: hidden;
+  overflow-x: auto;
   margin-bottom: 2rem;
+  /* テーブルレイアウトで確実に揃える */
+  display: table;
+  width: 100%;
+  min-width: 700px;
+  table-layout: fixed;
+  border-collapse: collapse;
 }
 
 .calendar-weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: table-row;
   background-color: #f3f4f6;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .weekday-header {
+  display: table-cell;
   padding: 1rem;
   text-align: center;
   font-weight: 600;
   color: #374151;
   border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  width: 14.2857%;
+  /* 100% / 7 */
 }
 
 .weekday-header:last-child {
@@ -138,21 +146,25 @@
 }
 
 .calendar-days {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(6, 1fr);
-  min-height: 500px;
+  display: table-row-group;
+}
+
+.calendar-week {
+  display: table-row;
 }
 
 .calendar-day {
+  display: table-cell;
   border-right: 1px solid #e5e7eb;
   border-bottom: 1px solid #e5e7eb;
   padding: 0.75rem;
   min-height: 80px;
-  display: flex;
-  flex-direction: column;
+  height: 80px;
+  vertical-align: top;
   position: relative;
   transition: background-color 0.2s ease-in-out;
+  width: 14.2857%;
+  /* 100% / 7 */
 }
 
 .calendar-day:nth-child(7n) {
@@ -440,4 +452,151 @@
   margin-left: 2px;
   vertical-align: top;
   display: inline-block;
+}
+
+/* 欠席申請情報 */
+.request-info {
+  margin-top: 4px;
+}
+
+.request-item {
+  font-size: 0.625rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-align: center;
+  white-space: nowrap;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.request-mark {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.request-text {
+  font-size: 0.625rem;
+}
+
+.request-pending {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+.request-approved {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #047857;
+  border: 1px solid #34d399;
+}
+
+.request-rejected {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+  border: 1px solid #f87171;
+}
+
+/* 申請のある日付セル */
+.calendar-day.has-request {
+  border-left: 3px solid #fbbf24;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .calendar-page {
+    padding: 1rem 0.5rem;
+  }
+
+  .calendar-title {
+    font-size: 1.5rem;
+  }
+
+  .calendar-navigation {
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .current-month {
+    font-size: 1.25rem;
+    min-width: 150px;
+  }
+
+  .nav-button {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .calendar-grid {
+    min-width: unset;
+    width: 100%;
+    overflow-x: visible;
+  }
+
+  .weekday-header {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .calendar-day {
+    padding: 0.25rem;
+    min-height: 60px;
+    height: auto;
+  }
+
+  .day-number {
+    font-size: 0.75rem;
+  }
+
+  .attendance-indicator {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.25rem;
+  }
+
+  .event-indicator {
+    font-size: 0.5rem;
+    padding: 1px 3px;
+    margin-top: 1px;
+  }
+
+  .day-requests {
+    font-size: 0.5rem;
+    padding: 1px 3px;
+    margin-top: 1px;
+  }
+
+  /* 統計カードのモバイル対応 */
+  .attendance-stats,
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .stats-item {
+    padding: 0.75rem;
+  }
+
+  .stats-value {
+    font-size: 1.25rem;
+  }
+
+  .stats-label {
+    font-size: 0.625rem;
+  }
+
+  /* 申請表示：モバイルではマークのみ表示 */
+  .request-text {
+    display: none;
+  }
+
+  .request-item {
+    padding: 2px 4px;
+    min-width: auto;
+  }
+
+  .request-mark {
+    font-size: 0.875rem;
+  }
 }

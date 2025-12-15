@@ -33,6 +33,14 @@ const TimetablePage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // 設定タブに切り替えた時にも設定を再取得
+    useEffect(() => {
+        if (activeTab === 'settings' && isAdminOrOwner) {
+            fetchSettings();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab]);
+
     useEffect(() => {
         if (selectedGroup) {
             fetchTimetables();
@@ -44,9 +52,11 @@ const TimetablePage = () => {
         try {
             const response = await groupApi.getGroups();
             if (response.success) {
-                setGroups(response.data);
-                if (response.data.length > 0) {
-                    setSelectedGroup(response.data[0].id);
+                // response.data.groupsから配列を取得
+                const groupsArray = response.data?.groups || [];
+                setGroups(groupsArray);
+                if (groupsArray.length > 0) {
+                    setSelectedGroup(groupsArray[0].id);
                 }
             }
         } catch (err) {
@@ -69,9 +79,11 @@ const TimetablePage = () => {
     };
 
     const fetchSettings = useCallback(async () => {
+        console.log('[TimetablePage] fetchSettings called, user role:', user?.role);
         setSettingsLoading(true);
         try {
             const response = await timetableApi.getOrganizationSettings();
+            console.log('[TimetablePage] getOrganizationSettings response:', response);
             if (response.success && response.data) {
                 setSettings({
                     lateLimitMinutes: response.data.lateLimitMinutes || 15,
@@ -84,7 +96,7 @@ const TimetablePage = () => {
         } finally {
             setSettingsLoading(false);
         }
-    }, []);
+    }, [user?.role]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];

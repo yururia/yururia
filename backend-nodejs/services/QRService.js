@@ -4,6 +4,12 @@ const StudentAttendanceService = require('./StudentAttendanceService');
 const SecurityService = require('./SecurityService');
 const uuid = require('uuid');
 
+// 曜日を取得するヘルパー関数
+const getDayOfWeek = (date) => {
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days[date.getDay()];
+};
+
 class QRService {
   /**
    * 場所ベースのQRコードを生成（管理者のみ）
@@ -379,11 +385,45 @@ class QRService {
     try {
       const { qr_data, timestamp, scanned_by } = data;
 
-      // 1. QRコードが学校固有のものか検証
-      if (!qr_data || !qr_data.startsWith('SCHOOL_ATTENDANCE')) {
+      logger.info('=== QRスキャン開始 ===', { qr_data, scanned_by });
+
+      // 1. QRコードが有効なフォーマットか検証（LOC_ または SCHOOL_ATTENDANCE）
+      if (!qr_data) {
         return {
           success: false,
-          message: '無効なQRコードです。学校固有のQRコードをスキャンしてください。'
+          message: 'QRコードデータが空です'
+        };
+      }
+
+      // LOC_で始まる場合はDBで検証
+      if (qr_data.startsWith('LOC_')) {
+        const qrRecord = await query(
+          'SELECT * FROM qr_codes WHERE code = ? AND is_active = TRUE',
+          [qr_data]
+        );
+
+        if (qrRecord.length === 0) {
+          logger.warn('QRコードがDBに見つからない', { qr_data });
+          return {
+            success: false,
+            message: '無効または期限切れのQRコードです'
+          };
+        }
+
+        // 有効期限チェック
+        if (qrRecord[0].expires_at && new Date(qrRecord[0].expires_at) < new Date()) {
+          return {
+            success: false,
+            message: 'このQRコードは有効期限が切れています'
+          };
+        }
+
+        logger.info('QRコード検証成功', { location_name: qrRecord[0].location_name });
+      } else if (!qr_data.startsWith('SCHOOL_ATTENDANCE')) {
+        // LOC_でもSCHOOL_ATTENDANCEでもない場合
+        return {
+          success: false,
+          message: '無効なQRコード形式です'
         };
       }
 
@@ -400,14 +440,34 @@ class QRService {
       if (!studentId) {
         return {
           success: false,
-          message: '学生IDが見つかりません'
+          message: '学生IDが設定されていません。プロフィールから学生IDを設定してください。'
         };
+      }
+
+      // 2.5. studentsテーブルにレコードがあるか確認し、なければ作成
+      const existingStudent = await query('SELECT student_id FROM students WHERE student_id = ?', [studentId]);
+      if (existingStudent.length === 0) {
+        // studentsテーブルにレコードを自動作成
+        await query(
+          'INSERT INTO students (student_id, name, email) VALUES (?, ?, ?)',
+          [studentId, user[0].name || studentId, user[0].email || `${studentId}@example.com`]
+        );
+        logger.info('studentsテーブルに学生レコードを自動作成', { studentId });
       }
 
       // 3. 現在時刻と曜日から該当する授業を検索
       const scanTime = timestamp ? new Date(timestamp) : new Date();
       const currentTime = scanTime.toTimeString().split(' ')[0];
-      const dayOfWeek = StudentAttendanceService.getDayOfWeek(scanTime);
+      const dayOfWeek = getDayOfWeek(scanTime);
+
+      logger.info('授業検索条件', {
+        studentId,
+        dayOfWeek,
+        currentTime,
+        scanTimeISO: scanTime.toISOString(),
+        scanTimeLocal: scanTime.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
+        dayNumber: scanTime.getDay()
+      });
 
       const classes = await query(
         `SELECT c.*, s.subject_name, e.id as enrollment_id
@@ -423,6 +483,8 @@ class QRService {
          ORDER BY c.start_time ASC`,
         [studentId, dayOfWeek, currentTime, currentTime]
       );
+
+      logger.info('授業検索結果', { classCount: classes.length });
 
       // 4. 該当授業が複数ある場合は選択肢を返す
       if (classes.length > 1) {
@@ -441,16 +503,146 @@ class QRService {
           timestamp,
           classes[0].id
         );
+        logger.info('出席記録結果', { result });
         return result;
       }
 
-      // 6. 該当授業がない場合
+      // 6. 該当授業がない場合 - 場所ベースの出席として記録
+      logger.info('該当授業なし、場所ベース出席として記録');
+
+      // QRコードの場所情報を取得
+      const qrInfo = await query(
+        'SELECT id, location_name FROM qr_codes WHERE code = ?',
+        [qr_data]
+      );
+      const locationName = qrInfo[0]?.location_name || '不明な場所';
+      const attendanceDate = scanTime.toISOString().split('T')[0];
+
+      // 時限設定と遅刻許容時間を取得して遅刻判定
+      let attendanceStatus = 'present';
+      let statusMessage = `${locationName}で出席を記録しました`;
+
+      try {
+        // 組織設定から遅刻許容時間を取得
+        const settingsResult = await query(
+          'SELECT late_limit_minutes FROM organization_settings WHERE organization_id = 1'
+        );
+        const lateLimitMinutes = settingsResult[0]?.late_limit_minutes || 15;
+
+        // 時限設定を取得
+        const timeSlotsResult = await query(
+          'SELECT * FROM organization_time_slots WHERE organization_id = 1 ORDER BY period_number'
+        );
+
+        logger.info('時限設定取得結果', {
+          timeSlotsCount: timeSlotsResult.length,
+          currentTime,
+          lateLimitMinutes
+        });
+
+        if (timeSlotsResult.length > 0) {
+          let matchedSlot = null;
+          let isBeforeFirstSlot = false;
+          let isAfterLastSlot = false;
+
+          // 最初と最後の時限を取得
+          const firstSlot = timeSlotsResult[0];
+          const lastSlot = timeSlotsResult[timeSlotsResult.length - 1];
+
+          // 現在時刻を分に変換
+          const currentParts = currentTime.split(':');
+          const currentMinutes = parseInt(currentParts[0]) * 60 + parseInt(currentParts[1]);
+
+          // 最初の時限より前かチェック
+          const firstStartParts = firstSlot.start_time.split(':');
+          const firstStartMinutes = parseInt(firstStartParts[0]) * 60 + parseInt(firstStartParts[1]);
+          if (currentMinutes < firstStartMinutes) {
+            isBeforeFirstSlot = true;
+          }
+
+          // 最後の時限より後かチェック
+          const lastEndParts = lastSlot.end_time.split(':');
+          const lastEndMinutes = parseInt(lastEndParts[0]) * 60 + parseInt(lastEndParts[1]);
+          if (currentMinutes > lastEndMinutes) {
+            isAfterLastSlot = true;
+          }
+
+          // 現在時刻がどの時限に該当するか確認
+          for (const slot of timeSlotsResult) {
+            const startTime = slot.start_time;
+            const endTime = slot.end_time;
+
+            // 現在時刻が時限の範囲内か確認
+            if (currentTime >= startTime && currentTime <= endTime) {
+              matchedSlot = slot;
+              // 開始時刻から遅刻許容時間を過ぎているか判定
+              const startParts = startTime.split(':');
+              const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+
+              if (currentMinutes > startMinutes + lateLimitMinutes) {
+                attendanceStatus = 'late';
+                statusMessage = `${locationName}で遅刻として記録しました（${slot.period_name}：${lateLimitMinutes}分以上遅れ）`;
+              }
+              break;
+            }
+          }
+
+          // 時限に該当しない場合の処理
+          if (!matchedSlot) {
+            if (isAfterLastSlot) {
+              // 最後の時限終了後 → 遅刻（授業時間外）
+              attendanceStatus = 'late';
+              statusMessage = `${locationName}で遅刻として記録しました（授業時間外：${currentTime}）`;
+            } else if (!isBeforeFirstSlot) {
+              // 時限の間（休憩時間など）→ 遅刻
+              attendanceStatus = 'late';
+              statusMessage = `${locationName}で遅刻として記録しました（時限外：${currentTime}）`;
+            }
+            // 最初の時限より前は早く来たとして出席扱い
+          }
+
+          logger.info('時限判定結果', {
+            currentTime,
+            matchedSlot: matchedSlot?.period_name || 'なし',
+            isBeforeFirstSlot,
+            isAfterLastSlot,
+            attendanceStatus
+          });
+        }
+      } catch (settingsError) {
+        logger.warn('時限設定の取得エラー:', settingsError.message);
+      }
+
+      // student_attendance_records に記録（既存のカラムのみ使用）
+      const insertResult = await query(
+        `INSERT INTO student_attendance_records (student_id, timestamp) 
+         VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE timestamp = VALUES(timestamp)`,
+        [studentId, scanTime]
+      );
+
+      logger.info('場所ベース出席記録完了', {
+        recordId: insertResult.insertId,
+        studentId,
+        locationName,
+        attendanceDate,
+        status: attendanceStatus
+      });
+
       return {
-        success: false,
-        message: '現在時刻に該当する授業が見つかりません'
+        success: true,
+        status: attendanceStatus,
+        message: statusMessage,
+        logicalDate: attendanceDate,
+        location: locationName,
+        recordId: insertResult.insertId
       };
     } catch (error) {
-      logger.error('QRコードスキャンエラー:', error.message);
+      logger.error('QRコードスキャンエラー:', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code
+      });
       return {
         success: false,
         message: error.message || 'QRコードスキャンの処理に失敗しました'

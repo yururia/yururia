@@ -250,6 +250,10 @@ export const attendanceApi = {
   scanQRCode: async (studentId, qrData) => {
     return apiClient.post('/qr/scan', { studentId, qrData });
   },
+  // recordScanはscanQRCodeへのエイリアス（StudentDashboardPageで使用）
+  recordScan: async (qrData, timestamp) => {
+    return apiClient.post('/qr/scan', { qr_data: qrData, timestamp });
+  },
   confirmScan: async (studentId, classId, scanToken) => {
     return apiClient.post('/qr/scan/confirm', { studentId, classId, scanToken });
   },

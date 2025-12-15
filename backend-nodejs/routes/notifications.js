@@ -63,7 +63,7 @@ router.post('/', authenticate, [
 router.get('/', authenticate, [
   query('type')
     .optional()
-    .isIn(['attendance', 'grade', 'general', 'alert'])
+    .isIn(['attendance', 'grade', 'general', 'alert', 'approval', 'rejection', 'info', 'warning', 'setting'])
     .withMessage('有効な通知タイプを選択してください'),
   query('priority')
     .optional()
@@ -95,11 +95,12 @@ router.get('/', authenticate, [
     // 自分の通知のみを取得
     const options = { ...req.query };
     if (req.user.role === 'student') {
-      options.student_id = req.user.studentId;
+      options.student_id = req.user.student_id;
     } else {
       options.user_id = req.user.id;
     }
 
+    logger.info('通知取得リクエスト', { options, user: req.user.id, role: req.user.role });
     const result = await NotificationService.getNotifications(options);
 
     res.json(result);
@@ -117,7 +118,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
     const result = await NotificationService.getNotification(
       id,
       req.user.id,
-      req.user.studentId,
+      req.user.student_id,
       req.user.role
     );
 
@@ -140,7 +141,7 @@ router.put('/:id/read', authenticate, async (req, res, next) => {
     const result = await NotificationService.markAsRead(
       id,
       req.user.id,
-      req.user.studentId,
+      req.user.student_id,
       req.user.role
     );
 
@@ -161,7 +162,7 @@ router.put('/read-all', authenticate, async (req, res, next) => {
   try {
     const result = await NotificationService.markAllAsRead(
       req.user.id,
-      req.user.studentId
+      req.user.student_id
     );
 
     if (result.success) {
@@ -183,7 +184,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     const result = await NotificationService.deleteNotification(
       id,
       req.user.id,
-      req.user.studentId,
+      req.user.student_id,
       req.user.role
     );
 

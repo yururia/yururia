@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import useAuthStore from '../stores/authStore';
 import { attendanceApi } from '../api/attendanceApi';
+import { absenceRequestApi } from '../api/absenceRequestApi';
 import { formatDate, getMonthDays, isToday, formatTime as formatTimeUtil } from '../utils/dateUtils';
 import ExportButton from '../components/common/ExportButton';
 import AbsenceRequestModal from '../components/calendar/AbsenceRequestModal';
@@ -13,6 +14,7 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
   const [attendanceRecords, setAttendanceRecords] = useState({});
   const [events, setEvents] = useState({}); // [追加] イベント用 state
   const [dailyStats, setDailyStats] = useState({}); // [追加] 日次統計
+  const [absenceRequests, setAbsenceRequests] = useState({}); // [追加] 欠席申請用 state
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -94,6 +96,44 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
       } else {
         console.warn('[Calendar Debug] Stats response failed or empty:', statsResponse);
         setDailyStats({});
+      }
+
+      // 4. [追加] 学生の欠席申請を取得
+      if (user?.role === 'student' && user?.student_id) {
+        try {
+          const absenceResponse = await absenceRequestApi.getRequestsByStudent(user.student_id, {
+            startDate,
+            endDate
+          });
+          if (absenceResponse && absenceResponse.success) {
+            const requestsMap = {};
+            const requests = Array.isArray(absenceResponse.data) ? absenceResponse.data : [];
+            requests.forEach((req) => {
+              // タイムゾーン問題を回避: YYYY-MM-DDの部分だけを使用
+              let reqDate = req.request_date;
+              if (reqDate) {
+                // ISO形式の場合はTより前の部分を取得
+                if (reqDate.includes('T')) {
+                  reqDate = reqDate.split('T')[0];
+                } else if (reqDate.includes(' ')) {
+                  // "YYYY-MM-DD HH:MM:SS"形式の場合
+                  reqDate = reqDate.split(' ')[0];
+                }
+                // 日付が10文字（YYYY-MM-DD）であることを確認
+                if (reqDate.length === 10) {
+                  if (!requestsMap[reqDate]) {
+                    requestsMap[reqDate] = [];
+                  }
+                  requestsMap[reqDate].push(req);
+                }
+              }
+            });
+            console.log('[Calendar] Absence requests map:', requestsMap);
+            setAbsenceRequests(requestsMap);
+          }
+        } catch (absErr) {
+          console.warn('[Calendar] 欠席申請取得エラー:', absErr);
+        }
       }
 
     } catch (err) {
@@ -208,6 +248,15 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
     return getMonthDays(currentDate.getFullYear(), currentDate.getMonth());
   }, [currentDate]);
 
+  // 日付を週ごと（7日ずつ）にグループ化
+  const calendarWeeks = useMemo(() => {
+    const weeks = [];
+    for (let i = 0; i < calendarDays.length; i += 7) {
+      weeks.push(calendarDays.slice(i, i + 7));
+    }
+    return weeks;
+  }, [calendarDays]);
+
   const formatTime = (timeStr) => {
     if (!timeStr) return '---';
     return formatTimeUtil(timeStr);
@@ -278,91 +327,144 @@ const CalendarPage = React.memo(({ isDashboardMode = false }) => {
           </div>
 
           <div className="calendar-days">
-            {calendarDays.map((day, index) => {
-              const dateStr = day.date ? formatDate(day.date, 'YYYY-MM-DD') : '';
-              const record = day.date ? attendanceRecords[dateStr] : null;
-              const dayEvents = day.date ? (events[dateStr] || []) : [];
+            {calendarWeeks.map((week, weekIndex) => (
+              <div key={weekIndex} className="calendar-week">
+                {week.map((day, dayIndex) => {
+                  const dateStr = day.date ? formatDate(day.date, 'YYYY-MM-DD') : '';
+                  const record = day.date ? attendanceRecords[dateStr] : null;
+                  const dayEvents = day.date ? (events[dateStr] || []) : [];
+                  const dayRequests = day.date ? (absenceRequests[dateStr] || []) : [];
 
-              const isCurrentMonth = day.isCurrentMonth;
-              const isTodayFlag = day.date && isToday(day.date);
+                  const isCurrentMonth = day.isCurrentMonth;
+                  const isTodayFlag = day.date && isToday(day.date);
 
-              const dayClasses = [
-                'calendar-day',
-                isCurrentMonth ? 'current-month' : 'other-month',
-                isTodayFlag ? 'today' : '',
-                record ? `status-${record.status}` : 'status-none',
-                dayEvents.length > 0 ? 'has-event' : ''
-              ].join(' ');
+                  // 承認された申請がある場合、そのタイプに応じたステータスを設定
+                  const approvedRequest = dayRequests.find(req => req.status === 'approved');
+                  let statusClass = 'status-none';
+                  if (approvedRequest) {
+                    // 承認された申請のタイプに応じてステータスを設定
+                    if (approvedRequest.request_type === 'absence' || approvedRequest.request_type === 'official_absence') {
+                      statusClass = 'status-absent';
+                    } else if (approvedRequest.request_type === 'late' || approvedRequest.request_type === 'official_late') {
+                      statusClass = 'status-late';
+                    } else if (approvedRequest.request_type === 'early_departure') {
+                      statusClass = 'status-early_departure';
+                    }
+                  } else if (record) {
+                    statusClass = `status-${record.status}`;
+                  }
 
-              // [追加] ツールチップ用タイトル
-              const stats = day.date ? dailyStats[dateStr] : null;
-              const hasPendingRequests = stats && stats.pending_requests > 0;
+                  const dayClasses = [
+                    'calendar-day',
+                    isCurrentMonth ? 'current-month' : 'other-month',
+                    isTodayFlag ? 'today' : '',
+                    statusClass,
+                    dayEvents.length > 0 ? 'has-event' : '',
+                    dayRequests.length > 0 ? 'has-request' : ''
+                  ].join(' ');
 
-              const tooltipText = stats
-                ? `欠席: ${stats.absent || 0}名, 遅刻: ${stats.late || 0}名, 早退: ${stats.early_departure || 0}名${hasPendingRequests ? `, 承認待ち: ${stats.pending_requests}件` : ''}`
-                : '';
+                  // [追加] ツールチップ用タイトル
+                  const stats = day.date ? dailyStats[dateStr] : null;
+                  const hasPendingRequests = stats && stats.pending_requests > 0;
 
-              return (
-                <div
-                  key={index}
-                  className={dayClasses}
-                  onContextMenu={(e) => handleContextMenu(e, day.date)}
-                  onClick={() => handleDateClick(day.date)}
-                  title={tooltipText}
-                >
-                  <div className="day-number">
-                    {day.day}
-                    {hasPendingRequests && (user?.role === 'teacher' || user?.role === 'admin') && (
-                      <span className="pending-indicator">●</span>
-                    )}
-                  </div>
-                  {isCurrentMonth && (
-                    <div className="day-content">
-                      {record && (
-                        <div className="attendance-info">
-                          <span className="status-badge">
-                            {record.status === 'present' ? '出' :
-                              record.status === 'absent' ? '欠' :
-                                record.status === 'late' ? '遅' :
-                                  record.status === 'early_departure' ? '早' : '他'}
-                          </span>
+                  const tooltipText = stats
+                    ? `欠席: ${stats.absent || 0}名, 遅刻: ${stats.late || 0}名, 早退: ${stats.early_departure || 0}名${hasPendingRequests ? `, 承認待ち: ${stats.pending_requests}件` : ''}`
+                    : '';
 
-                          <div className="attendance-times-calendar">
-                            <span className="time-value">
-                              {formatTime(record.check_in_time)}
-                            </span>
-                            <span className="time-separator">~</span>
-                            <span className="time-value">
-                              {formatTime(record.check_out_time)}
-                            </span>
-                          </div>
-
-                          {record.reason && (
-                            <div className="time-item">
-                              <span className="time-label">理由:</span>
-                              <span className="time-value">
-                                {record.reason}
+                  return (
+                    <div
+                      key={dayIndex}
+                      className={dayClasses}
+                      onContextMenu={(e) => handleContextMenu(e, day.date)}
+                      onClick={() => handleDateClick(day.date)}
+                      title={tooltipText}
+                    >
+                      <div className="day-number">
+                        {day.day}
+                        {hasPendingRequests && (user?.role === 'teacher' || user?.role === 'admin') && (
+                          <span className="pending-indicator">●</span>
+                        )}
+                      </div>
+                      {isCurrentMonth && (
+                        <div className="day-content">
+                          {record && (
+                            <div className="attendance-info">
+                              <span className="status-badge">
+                                {record.status === 'present' ? '出' :
+                                  record.status === 'absent' ? '欠' :
+                                    record.status === 'late' ? '遅' :
+                                      record.status === 'early_departure' ? '早' : '他'}
                               </span>
+
+                              <div className="attendance-times-calendar">
+                                <span className="time-value">
+                                  {formatTime(record.check_in_time)}
+                                </span>
+                                <span className="time-separator">~</span>
+                                <span className="time-value">
+                                  {formatTime(record.check_out_time)}
+                                </span>
+                              </div>
+
+                              {record.reason && (
+                                <div className="time-item">
+                                  <span className="time-label">理由:</span>
+                                  <span className="time-value">
+                                    {record.reason}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           )}
-                        </div>
-                      )}
 
-                      {dayEvents.length > 0 && (
-                        <div className="event-info">
-                          {dayEvents.map(event => (
-                            <div key={event.id} className="event-item" title={event.title}>
-                              {event.title}
+                          {dayEvents.length > 0 && (
+                            <div className="event-info">
+                              {dayEvents.map(event => (
+                                <div key={event.id} className="event-item" title={event.title}>
+                                  {event.title}
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          )}
+
+                          {/* [追加] 欠席申請の表示（1日1件のみ） */}
+                          {dayRequests.length > 0 && (() => {
+                            // 1日につき最新の申請のみ表示
+                            const latestRequest = dayRequests[0];
+                            const getStatusMark = (status) => {
+                              switch (status) {
+                                case 'pending': return '📝';
+                                case 'approved': return '✅';
+                                case 'rejected': return '❌';
+                                default: return '📋';
+                              }
+                            };
+                            const getStatusText = (status) => {
+                              switch (status) {
+                                case 'pending': return '申請中';
+                                case 'approved': return '承認済';
+                                case 'rejected': return '却下';
+                                default: return '';
+                              }
+                            };
+                            return (
+                              <div
+                                className={`request-item request-${latestRequest.status}`}
+                                title={`${latestRequest.request_type}: ${latestRequest.reason}`}
+                              >
+                                <span className="request-mark">{getStatusMark(latestRequest.status)}</span>
+                                <span className="request-text">{getStatusText(latestRequest.status)}</span>
+                              </div>
+                            );
+                          })()}
+
                         </div>
                       )}
-
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
 

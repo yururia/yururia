@@ -16,8 +16,8 @@ router.use(authenticate);
  */
 router.post('/:requestId/approve', async (req, res) => {
     try {
-        // 教員または管理者のみ
-        if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+        // 教員、管理者、オーナーのみ
+        if (req.user.role !== 'teacher' && req.user.role !== 'admin' && req.user.role !== 'owner') {
             return res.status(403).json({
                 success: false,
                 message: '教員または管理者のみ承認できます'
@@ -55,8 +55,8 @@ router.post('/:requestId/approve', async (req, res) => {
  */
 router.post('/:requestId/reject', async (req, res) => {
     try {
-        // 教員または管理者のみ
-        if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+        // 教員、管理者、オーナーのみ
+        if (req.user.role !== 'teacher' && req.user.role !== 'admin' && req.user.role !== 'owner') {
             return res.status(403).json({
                 success: false,
                 message: '教員または管理者のみ却下できます'

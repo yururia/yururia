@@ -247,33 +247,33 @@
   .student-dashboard-page {
     padding: 16px;
   }
-  
+
   .dashboard-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .groups-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .invitation-card {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
-  
+
   .invitation-actions {
     margin-left: 0;
     width: 100%;
   }
-  
+
   .activity-card {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .activity-icon {
     margin-right: 0;
     margin-bottom: 12px;
@@ -286,61 +286,235 @@
     background: #1f2937;
     color: #f9fafb;
   }
-  
+
   .dashboard-header {
     background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
   }
-  
+
   .qr-scan-section {
     background: linear-gradient(135deg, #be185d 0%, #ec4899 100%);
   }
-  
+
   .group-card {
     background: #1f2937;
     border-color: #374151;
   }
-  
+
   .group-card-header,
   .group-card-footer {
     background: #111827;
     border-color: #374151;
   }
-  
+
   .group-card-header h3 {
     color: #f9fafb;
   }
-  
+
   .group-info p {
     color: #d1d5db;
   }
-  
+
   .invitation-card {
     background: #451a03;
     border-color: #d97706;
   }
-  
+
   .invitation-info h3 {
     color: #fbbf24;
   }
-  
+
   .invitation-info p {
     color: #f59e0b;
   }
-  
+
   .activity-card {
     background: #064e3b;
     border-color: #065f46;
   }
-  
+
   .activity-info h3 {
     color: #a7f3d0;
   }
-  
+
   .activity-info p {
     color: #6ee7b7;
   }
-  
+
   .no-groups {
     color: #9ca3af;
+  }
+}
+
+/* 出席結果モーダル */
+.attendance-result-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.attendance-result-modal {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.attendance-result-modal.present {
+  border-top: 6px solid #10b981;
+}
+
+.attendance-result-modal.late {
+  border-top: 6px solid #f59e0b;
+}
+
+.result-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.result-title {
+  margin: 0 0 8px 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.attendance-result-modal.present .result-title {
+  color: #059669;
+}
+
+.attendance-result-modal.late .result-title {
+  color: #d97706;
+}
+
+.result-message {
+  color: #6b7280;
+  font-size: 1rem;
+  margin: 0 0 24px 0;
+}
+
+.result-details {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.detail-value {
+  color: #111827;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.result-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.result-actions .btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.result-actions .btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.result-actions .btn-primary:hover {
+  background: #2563eb;
+}
+
+.result-actions .btn-warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.result-actions .btn-warning:hover {
+  background: #d97706;
+}
+
+/* ダークモード対応 - 出席結果モーダル */
+@media (prefers-color-scheme: dark) {
+  .attendance-result-modal {
+    background: #1f2937;
+    color: #f9fafb;
+  }
+
+  .result-message {
+    color: #9ca3af;
+  }
+
+  .result-details {
+    background: #374151;
+  }
+
+  .detail-row {
+    border-color: #4b5563;
+  }
+
+  .detail-label {
+    color: #9ca3af;
+  }
+
+  .detail-value {
+    color: #f9fafb;
   }
 }
